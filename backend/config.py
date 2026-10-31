@@ -6,7 +6,7 @@
 # hike 25, hike 50+); index 2 = "no change", the most liquid, compared with
 # FedWatch's hold probability.
 EVENTS = [
-    {"event_id": "fed-dec", "slug": "fed-decision-in-december-20260729232808632", "market_index": 2},
+    {"event_id": "fed-dec", "slug": "fed-decision-in-december-20260729232808632", "market_index": 2, "fed": True},
 ]
 
 POLL_SECONDS = 5
@@ -24,3 +24,22 @@ DEPTH_USD = (10_000.0, 1_000.0)
 
 AGENT_MATCH_TOLERANCE_PTS = 2.0
 AGENT_MIN_ACCURACY = 0.8
+
+# Fed event: Polymarket market_index -> (label on polymarket.com, rate change in bps).
+# "50+" buckets collect every FedWatch range at or beyond +/-50.
+FED_OUTCOMES = {
+    0: ("50+ bps decrease", -50),
+    1: ("25 bps decrease", -25),
+    2: ("No change", 0),
+    3: ("25 bps increase", 25),
+    4: ("50+ bps increase", 50),
+}
+# Current fed funds target range (lower bound, bps). Verify before the demo.
+FED_CURRENT_LOWER_BPS = 375
+
+# News reaction (§5.7)
+REACTION_WINDOW_MIN = 60
+REACTION_MIN_PTS = 1.0
+CLUSTER_WINDOW_MIN = 120
+SENTIMENT_HALF_LIFE_H = 24
+SENTIMENT_LOOKBACK_H = 48

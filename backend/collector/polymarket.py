@@ -66,6 +66,19 @@ async def fetch_event_market(client: httpx.AsyncClient, slug: str, market_index:
     )
 
 
+async def fetch_event_mids(client: httpx.AsyncClient, slug: str) -> dict[int, float]:
+    """Mid price of every market in an event from one Gamma call (uses Gamma's
+    bestBid/bestAsk, which lag the CLOB slightly — fine for comparing outcomes)."""
+    r = await client.get(f"{GAMMA}/events", params={"slug": slug})
+    r.raise_for_status()
+    out = {}
+    for i, m in enumerate(r.json()[0]["markets"]):
+        bid, ask = m.get("bestBid"), m.get("bestAsk")
+        if bid is not None and ask is not None:
+            out[i] = (float(bid) + float(ask)) / 2
+    return out
+
+
 async def fetch_book(client: httpx.AsyncClient, token_id: str) -> Book:
     r = await client.get(f"{CLOB}/book", params={"token_id": token_id})
     r.raise_for_status()

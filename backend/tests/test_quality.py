@@ -88,6 +88,14 @@ class FreshnessTest(unittest.TestCase):
         c = q.check_freshness(self.series((600, .6), (570, .5)), NOW)
         self.assertEqual((c.status, c.detail), ("bad", "changed 9h 30m ago"))
 
+    def test_stable_deep_market_is_not_stale(self):
+        deep = book([(0.27, 50000)], [(0.28, 50000)])
+        h = self.series((700, .27), (650, .28))
+        c = q.check_freshness(h, NOW, deep)
+        self.assertEqual(c.status, "ok")
+        self.assertIn("stable", c.detail)
+        self.assertEqual(q.check_freshness(h, NOW, YES).status, "bad")  # 4-pt spread, thin
+
 
 class GradeTest(unittest.TestCase):
     def test_spread_grades(self):

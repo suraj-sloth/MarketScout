@@ -33,8 +33,9 @@
   goal: >
     List up to 5 articles from the last 48h about the Federal Reserve's next
     rate decision. For each: headline, URL, published time (UTC ISO 8601),
-    whether it makes a rate CUT more likely (1), less likely (-1) or neutral
-    (0), and a one-sentence reason quoting the article.
+    whether it makes NO CHANGE in rates at the December 2026 meeting more
+    likely (1), less likely (-1) or is neutral (0), and a one-sentence reason
+    quoting the article.
   schema:
     items: [{headline: str, url: str, published_at: str, direction: int, reason: str}]
   refresh_minutes: 15

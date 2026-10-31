@@ -117,9 +117,14 @@ def check_coherence(yes_book: Book, no_book: Book) -> Check:
     return Check("coherence", "ok", "YES and NO agree")
 
 
-def check_freshness(history: list[PricePoint], now: datetime) -> Check:
+def check_freshness(history: list[PricePoint], now: datetime, book: Book | None = None) -> Check:
+    """A price that hasn't moved is only suspicious if the book is also wide or
+    thin; a tight, deep market can sit at the same 1-cent tick for hours."""
     lc = last_change(history)
     if lc is None:
         return Check("freshness", "warn", "no price history")
     hours = (now - lc).total_seconds() / 3600
-    return Check("freshness", _grade_low(hours, FRESHNESS_HOURS), _fmt_age(hours))
+    status = _grade_low(hours, FRESHNESS_HOURS)
+    if status != "ok" and book is not None and check_spread(book).status == "ok" and check_depth(book).status == "ok":
+        return Check("freshness", "ok", f"{_fmt_age(hours)} (stable: tight, deep book)")
+    return Check("freshness", status, _fmt_age(hours))
