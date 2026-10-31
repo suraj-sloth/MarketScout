@@ -34,8 +34,14 @@ class SchemaError(ValueError):
     pass
 
 
+PRIORITIES = ("high", "normal", "low")
+
+
 def load_sources() -> dict[str, dict]:
-    return {s["id"]: s for s in yaml.safe_load(SOURCES.read_text())}
+    """sources.yaml entries, highest priority first (stable within a priority)."""
+    sources = yaml.safe_load(SOURCES.read_text())
+    sources.sort(key=lambda s: PRIORITIES.index(s.get("priority", "normal")))
+    return {s["id"]: s for s in sources}
 
 
 # --- schema validation ------------------------------------------------------
@@ -44,27 +50,67 @@ def load_sources() -> dict[str, dict]:
 _TYPES = {"str": str, "int": int, "float": (int, float)}
 
 
-def validate(value, schema, path: str = "result") -> None:
+def validate(value, schema, path: str = "result", allow_empty: bool = False) -> None:
+    """Lists must be non-empty unless allow_empty: an empty FedWatch table or
+    outcome list means the agent read nothing, and must not replace a good
+    cached reading. News sources set allow_empty (no articles is a real answer)."""
     if isinstance(schema, dict):
         if not isinstance(value, dict):
             raise SchemaError(f"{path}: expected object")
         for key, sub in schema.items():
             if key not in value:
                 raise SchemaError(f"{path}.{key}: missing")
-            validate(value[key], sub, f"{path}.{key}")
+            validate(value[key], sub, f"{path}.{key}", allow_empty)
     elif isinstance(schema, list):
         if not isinstance(value, list):
             raise SchemaError(f"{path}: expected list")
+        if not value and not allow_empty:
+            raise SchemaError(f"{path}: empty")
         for i, item in enumerate(value):
-            validate(item, schema[0], f"{path}[{i}]")
+            validate(item, schema[0], f"{path}[{i}]", allow_empty)
     else:
         expected = _TYPES[schema]
         if isinstance(value, bool) or not isinstance(value, expected):
             raise SchemaError(f"{path}: expected {schema}, got {type(value).__name__}")
 
 
-def goal_with_schema(source: dict) -> str:
-    return f"{source['goal'].strip()}\nReturn only JSON matching this shape: {json.dumps(source['schema'])}"
+_JSON_TYPES = {"str": "string", "int": "integer", "float": "number"}
+
+
+def to_json_schema(schema, allow_empty: bool = False) -> dict:
+    """Convert the sources.yaml notation to the JSON Schema TinyFish's
+    `output_schema` expects. Every listed field is required."""
+    if isinstance(schema, dict):
+        return {
+            "type": "object",
+            "properties": {k: to_json_schema(v, allow_empty) for k, v in schema.items()},
+            "required": list(schema),
+        }
+    if isinstance(schema, list):
+        out = {"type": "array", "items": to_json_schema(schema[0], allow_empty)}
+        if not allow_empty:
+            out["minItems"] = 1
+        return out
+    return {"type": _JSON_TYPES[schema]}
+
+
+def request_body(source: dict) -> dict:
+    """POST body for one source. Optional per-source settings in sources.yaml:
+    max_duration_seconds (TinyFish stops the run itself after this) and
+    strict_schema (also send the schema as TinyFish's `output_schema`).
+
+    strict_schema is off by default: on the Polymarket page it made TinyFish
+    return an empty list every time, while the same goal without it returned
+    all five outcomes. The shape hint in the goal plus validate() is enough."""
+    body = {
+        "url": source["url"],
+        "goal": f"{source['goal'].strip()}\nReturn JSON matching this shape: {json.dumps(source['schema'])}",
+    }
+    if source.get("strict_schema"):
+        body["output_schema"] = to_json_schema(source["schema"], source.get("allow_empty", False))
+    if "max_duration_seconds" in source:
+        body["agent_config"] = {"max_duration_seconds": source["max_duration_seconds"]}
+    return body
 
 
 # --- cache ------------------------------------------------------------------
@@ -88,9 +134,9 @@ def _headers() -> dict:
     return {"X-API-Key": os.environ["TINYFISH_API_KEY"]}
 
 
-def _run(url: str, goal: str, timeout_s: float) -> dict:
+def _run(body: dict, timeout_s: float) -> dict:
     with httpx.Client(base_url=API, headers=_headers(), timeout=30) as c:
-        r = c.post("/v1/automation/run-async", json={"url": url, "goal": goal})
+        r = c.post("/v1/automation/run-async", json=body)
         r.raise_for_status()
         run_id = r.json()["run_id"]
         deadline = time.monotonic() + timeout_s
@@ -102,15 +148,15 @@ def _run(url: str, goal: str, timeout_s: float) -> dict:
     raise RuntimeError(f"run {run_id} timed out after {timeout_s:.0f}s")
 
 
-def _run_with_retry(url: str, goal: str, attempts: int, timeout_s: float) -> dict:
+def _run_with_retry(body: dict, attempts: int, timeout_s: float) -> dict:
     """Runs sometimes hang in RUNNING forever while a fresh run finishes in ~2 min,
     so give each attempt its own timeout and start over rather than wait longer."""
     for i in range(attempts):
         try:
-            body = _run(url, goal, timeout_s)
-            if body.get("status") == "COMPLETED":
-                return body
-            err = RuntimeError(body.get("error") or f"status {body.get('status')}")
+            run = _run(body, timeout_s)
+            if run.get("status") == "COMPLETED":
+                return run
+            err = RuntimeError(run.get("error") or f"status {run.get('status')}")
         except (httpx.HTTPError, RuntimeError) as e:
             err = e
         if i == attempts - 1:
@@ -123,8 +169,10 @@ def run_source(source_id: str, attempts: int = 2, timeout_s: float = 300) -> dic
     good cached result is returned with from_cache=True (or the error if none)."""
     source = load_sources()[source_id]
     try:
-        body = _run_with_retry(source["url"], goal_with_schema(source), attempts, timeout_s)
-        validate(body["result"], source["schema"])
+        # Our client-side wait must outlast TinyFish's own limit for the run.
+        timeout_s = max(timeout_s, source.get("max_duration_seconds", 0) + 60)
+        body = _run_with_retry(request_body(source), attempts, timeout_s)
+        validate(body["result"], source["schema"], allow_empty=source.get("allow_empty", False))
         entry = {
             "source_id": source_id,
             "run_id": body.get("run_id"),

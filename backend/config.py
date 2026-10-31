@@ -13,7 +13,10 @@ EVENTS = [
 ]
 
 POLL_SECONDS = 5
-AGENT_REFRESH_MINUTES = 15
+# How often each sources.yaml priority is refreshed. High-priority sources also
+# run first in every cycle and at startup.
+AGENT_REFRESH_MINUTES = {"high": 15, "normal": 15, "low": 60}
+AGENT_MAX_PARALLEL = 3
 
 # Depth counts orders within this distance of mid (probability units).
 DEPTH_BAND = 0.05

@@ -36,7 +36,7 @@ The verdict comes from:
 | Frontend B1–B8 | ✅ Done, fully functional dark fintech dashboard (LittleBee-inspired) |
 | Wire-up (A9) | ✅ Frontend works against live backend via Vite proxy. PR `fe/live-data-fixes` removes mock/fabricated values from live mode |
 | Events tracked | **Live: 3** — Fed "hike 25 bps" Dec 9 (🟢, index 3; clearer than "no change" for news direction), BTC $150k by Dec 31 2026 (🟢, `when-will-bitcoin-hit-150k` [4]), Gov shutdown by Dec 31 (🔴 thin + flat, `government-shutdown-by` [1]) |
-| News sources | **Live:** CNBC Fed (`news_cnbc_fed`), CoinDesk (`news_coindesk_btc`), CNBC politics (`news_cnbc_shutdown`, currently 0 shutdown articles). Reuters (401), AP and The Hill (403) block requests; Cointelegraph timed out twice — dropped. Agent console dropdown reads `GET /api/sources` (= `sources.yaml`) |
+| News sources | **Live:** CNBC Fed (`news_cnbc_fed`), CoinDesk (`news_coindesk_btc`), CNBC politics (`news_cnbc_shutdown`, currently 0 shutdown articles). Sites that block automated access (Reuters, AP, The Hill) are not used. Agent console dropdown reads `GET /api/sources` (= `sources.yaml`) |
 | TinyFish | Verified: CME FedWatch scraper + Polymarket accuracy verification (100% / 5 matches) |
 
 Real result to use in the demo: FedWatch and Polymarket agree within 2 pts (hike 25 bps ≈ 70.5% vs 70.7%; no change ≈ 27.5% vs 29.3%). Agent accuracy 100% (5/5).
@@ -176,6 +176,13 @@ Each market has 2 token IDs (YES, NO) in `clobTokenIds`.
 
 ### Web (TinyFish) — sites with no API
 All in `backend/sources.yaml`. Adding a source = adding a YAML entry, no code.
+
+Per-source options (TinyFish's API has no run-priority feature, so priority is ours):
+- `priority: high | normal | low`: the scheduler runs high first each cycle; refresh every 15 / 15 / 60 min (`config.AGENT_REFRESH_MINUTES`). High: `fedwatch`, `pm_page_fed`. Normal: news.
+- `max_duration_seconds`: TinyFish stops the run itself (fixes runs hanging for 10+ min).
+- `allow_empty: true`: an empty list is a real answer (news). Otherwise empty results are rejected and the cached reading is kept.
+- `strict_schema: true`: also send the schema as TinyFish's `output_schema`. **Off by default**: on the Polymarket page it made TinyFish return an empty list every time, while the same goal without it returned all 5 outcomes.
+- Only use sites that load normally; skip any that block automated access.
 
 | ID | Source | Returns | Checked against |
 | --- | --- | --- | --- |

@@ -191,7 +191,7 @@ export const AgentModal: React.FC<AgentModalProps> = ({
                 {sources.length === 0 && <option value="">No sources loaded</option>}
                 {sources.map((s) => (
                   <option key={s.id} value={s.id}>
-                    {s.kind_label} · {s.name}{s.event ? ` (${s.event})` : ''} — last run{' '}
+                    {s.priority === 'high' ? '★ ' : ''}{s.kind_label} · {s.name}{s.event ? ` (${s.event})` : ''} — last run{' '}
                     {s.last_run ? `${new Date(s.last_run).toISOString().slice(11, 16)} UTC` : 'never'}
                   </option>
                 ))}

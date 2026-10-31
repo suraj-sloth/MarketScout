@@ -116,6 +116,7 @@ export interface AgentSource {
   name: string;
   kind: 'outside_view' | 'agent_check' | 'news' | string;
   kind_label: string;
+  priority: 'high' | 'normal' | 'low' | string;
   event: string | null;
   url: string;
   last_run: string | null;

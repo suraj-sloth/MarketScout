@@ -8,11 +8,13 @@ import os
 import threading
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 
 from agent import tinyfish
 from collector import polymarket as pm
-from config import AGENT_REFRESH_MINUTES, EVENTS, POLL_SECONDS
+from config import AGENT_MAX_PARALLEL, AGENT_REFRESH_MINUTES, EVENTS, POLL_SECONDS
 
 log = logging.getLogger("marketscout")
 
@@ -79,17 +81,49 @@ def start_agent_run(source_id: str) -> dict:
     return AGENT_RUNS[run_id]
 
 
+def due_sources(sources: dict[str, dict], last_attempt: dict[str, float], now: float) -> list[str]:
+    """Sources whose priority's refresh interval has passed, highest priority
+    first (load_sources is already sorted)."""
+    return [
+        sid for sid, s in sources.items()
+        if now - last_attempt.get(sid, 0.0) >= AGENT_REFRESH_MINUTES[s.get("priority", "normal")] * 60
+    ]
+
+
+def _seed_last_attempt() -> dict[str, float]:
+    """Treat cached results as recent attempts so a restart doesn't re-run
+    every source (and spend credits) when the cache is still fresh."""
+    out = {}
+    for sid, entry in tinyfish.read_cache().items():
+        try:
+            out[sid] = datetime.fromisoformat(entry["ts"]).timestamp()
+        except (KeyError, ValueError):
+            pass
+    return out
+
+
 def schedule_agent_forever() -> None:
-    """Refresh every source on a timer. Set AGENT_SCHEDULE=0 to save TinyFish
+    """Refresh sources by priority. Set AGENT_SCHEDULE=0 to save TinyFish
     credits during development (the UI then serves agent_cache.json)."""
     if os.environ.get("AGENT_SCHEDULE", "1") == "0":
         log.info("agent schedule disabled")
         return
 
     def loop() -> None:
+        last_attempt = _seed_last_attempt()
         while True:
-            for source_id in tinyfish.load_sources():
-                tinyfish.run_source(source_id)
-            time.sleep(AGENT_REFRESH_MINUTES * 60)
+            sources = tinyfish.load_sources()
+            due = due_sources(sources, last_attempt, time.time())
+            # Run each priority level as a batch so high always finishes first.
+            for level in tinyfish.PRIORITIES:
+                batch = [sid for sid in due if sources[sid].get("priority", "normal") == level]
+                if not batch:
+                    continue
+                log.info("agent: running %s priority %s", level, batch)
+                with ThreadPoolExecutor(AGENT_MAX_PARALLEL) as ex:
+                    list(ex.map(tinyfish.run_source, batch))
+                for sid in batch:
+                    last_attempt[sid] = time.time()
+            time.sleep(60)
 
     threading.Thread(target=loop, daemon=True).start()

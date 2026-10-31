@@ -1,9 +1,22 @@
 # Web sources TinyFish reads (planning.md §3). Adding a source = adding an entry.
-# kind: outside_view | news | agent_check
-# Person B adds the news_* entries (task B5).
+#
+# kind:      outside_view | news | agent_check
+# priority:  high | normal | low (default normal). High runs first in every
+#            cycle; refresh intervals per priority are in config.py.
+# schema:    short notation (str | int | float, {...}, [...]). Described in the
+#            goal and checked on every result.
+# strict_schema: true to also send it as TinyFish's `output_schema`. Off by
+#            default: it made the Polymarket page check return empty lists.
+# max_duration_seconds: optional; TinyFish stops the run itself after this.
+# allow_empty: true if an empty list is a real answer (news: no articles).
+#              Otherwise empty lists are rejected and the cached reading is kept.
+#
+# Only use sites that load normally; skip any that block automated access.
 
 - id: fedwatch
   kind: outside_view
+  priority: high
+  max_duration_seconds: 240
   event: fed-dec
   url: https://www.cmegroup.com/markets/interest-rates/cme-fedwatch-tool.html
   goal: >
@@ -13,10 +26,11 @@
   schema:
     meeting_date: str
     probabilities: [{range_bps: str, prob: float}]
-  refresh_minutes: 15
 
 - id: pm_page_fed
   kind: agent_check
+  priority: high
+  max_duration_seconds: 180
   event: fed-dec
   url: https://polymarket.com/event/fed-decision-in-december-20260729232808632
   goal: >
@@ -24,11 +38,13 @@
     number between 0 and 1.
   schema:
     outcomes: [{name: str, prob: float}]
-  refresh_minutes: 15
 
 - id: news_cnbc_fed
   name: CNBC
   kind: news
+  allow_empty: true
+  priority: normal
+  max_duration_seconds: 300
   event: fed-dec
   url: https://www.cnbc.com/federal-reserve/
   goal: >
@@ -39,11 +55,13 @@
     quoting the article.
   schema:
     items: [{headline: str, url: str, published_at: str, direction: int, reason: str}]
-  refresh_minutes: 15
 
 - id: news_coindesk_btc
   name: CoinDesk
   kind: news
+  allow_empty: true
+  priority: normal
+  max_duration_seconds: 300
   event: btc-150k-dec
   url: https://www.coindesk.com/markets
   goal: >
@@ -54,11 +72,13 @@
     article.
   schema:
     items: [{headline: str, url: str, published_at: str, direction: int, reason: str}]
-  refresh_minutes: 15
 
 - id: news_cnbc_shutdown
   name: CNBC
   kind: news
+  allow_empty: true
+  priority: normal
+  max_duration_seconds: 300
   event: gov-shutdown-dec
   url: https://www.cnbc.com/politics/
   goal: >
@@ -69,4 +89,3 @@
     one-sentence reason quoting the article.
   schema:
     items: [{headline: str, url: str, published_at: str, direction: int, reason: str}]
-  refresh_minutes: 15

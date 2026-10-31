@@ -59,6 +59,7 @@ def sources() -> dict:
             "name": s.get("name", s["id"]),
             "kind": s["kind"],
             "kind_label": KIND_LABELS.get(s["kind"], s["kind"]),
+            "priority": s.get("priority", "normal"),
             "event": s.get("event"),
             "url": s["url"],
             "last_run": cache.get(s["id"], {}).get("ts"),
