@@ -41,6 +41,10 @@ export async function fetchMarkets(): Promise<{ data: MarketsResponse; isMock: b
   return { data: MOCK_MARKETS_RESPONSE, isMock: true };
 }
 
+function emptyEvidence(eventId: string): EvidenceResponse {
+  return { event_id: eventId, price_history: [], fedwatch: null, articles: [] };
+}
+
 export async function fetchEvidence(eventId: string): Promise<{ data: EvidenceResponse; isMock: boolean }> {
   if (currentMode === 'live') {
     try {
@@ -52,63 +56,60 @@ export async function fetchEvidence(eventId: string): Promise<{ data: EvidenceRe
         return { data, isMock: false };
       }
       if (res.status === 404) {
-        // Backend hasn't completed initial poll yet, retry once or fallback gracefully
+        // Backend hasn't completed its first poll yet; the next poll will retry.
         console.warn(`Evidence for ${eventId} still initializing on backend...`);
       }
     } catch (err) {
-      console.warn(`Error fetching evidence for ${eventId}, falling back to mock`, err);
+      console.warn(`Error fetching evidence for ${eventId}`, err);
     }
+    // Live mode never shows mock evidence: render empty states instead.
+    return { data: emptyEvidence(eventId), isMock: false };
   }
 
-  const mock = MOCK_EVIDENCE_MAP[eventId] || {
-    event_id: eventId,
-    price_history: [],
-    fedwatch: null,
-    articles: []
-  };
-  return { data: mock, isMock: true };
+  return { data: MOCK_EVIDENCE_MAP[eventId] || emptyEvidence(eventId), isMock: true };
 }
+
+const AGENT_POLL_CEILING_MS = 11 * 60 * 1000;
 
 export async function triggerAgentRun(
   sourceId: string,
   onStepUpdate?: (steps: string[]) => void
 ): Promise<AgentRunResponse> {
   if (currentMode === 'live') {
-    try {
-      const res = await fetch('/api/agent/run', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source_id: sourceId })
-      });
-
-      if (res.ok) {
-        const initial = await res.json();
-        if (initial.status === 'done' || initial.status === 'failed') {
-          return initial;
-        }
-
-        // Poll until completion
-        const runId = initial.run_id;
-        const startTime = Date.now();
-        const timeoutMs = 60000; // 1 min poll ceiling
-
-        while (Date.now() - startTime < timeoutMs) {
-          await new Promise((r) => setTimeout(r, 3000));
-          const pollRes = await fetch(`/api/agent/runs/${runId}`);
-          if (pollRes.ok) {
-            const runState: AgentRunResponse = await pollRes.json();
-            if (onStepUpdate && runState.steps) {
-              onStepUpdate(runState.steps);
-            }
-            if (runState.status === 'done' || runState.status === 'failed') {
-              return runState;
-            }
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('Live agent run failed, falling back to mock simulator', e);
+    // Live mode never falls back to the mock simulator: errors propagate to the
+    // caller so the console shows what really happened.
+    const res = await fetch('/api/agent/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source_id: sourceId })
+    });
+    if (!res.ok) {
+      throw new Error(`backend returned ${res.status}`);
     }
+    const initial: AgentRunResponse = await res.json();
+    onStepUpdate?.(initial.steps || []);
+    if (initial.status === 'done' || initial.status === 'failed') {
+      return initial;
+    }
+
+    // TinyFish runs take 1–5 min (queue + browsing) and the backend retries a
+    // hung run once, so allow up to AGENT_POLL_CEILING_MS before giving up.
+    let last = initial;
+    const startTime = Date.now();
+    while (Date.now() - startTime < AGENT_POLL_CEILING_MS) {
+      await new Promise((r) => setTimeout(r, 5000));
+      const pollRes = await fetch(`/api/agent/runs/${initial.run_id}`);
+      if (!pollRes.ok) continue;
+      last = await pollRes.json();
+      onStepUpdate?.(last.steps || []);
+      if (last.status === 'done' || last.status === 'failed') {
+        return last;
+      }
+    }
+    return {
+      ...last,
+      steps: [...(last.steps || []), 'Still running on the backend; its result will be cached and shown on the next refresh.']
+    };
   }
 
   // Simulated animated run for mock demo

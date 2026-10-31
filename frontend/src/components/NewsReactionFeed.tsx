@@ -132,8 +132,8 @@ export const NewsReactionFeed: React.FC<NewsReactionFeedProps> = ({ articles }) 
 
               <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
                 {getReactionBadge(art.reaction)}
-                <span style={{ fontSize: '0.7rem', fontWeight: 700, fontFamily: 'monospace', color: art.delta_p_pts !== 0 ? '#4ade80' : '#94a3b8' }}>
-                  {art.delta_p_pts > 0 ? `+${art.delta_p_pts.toFixed(1)}` : art.delta_p_pts.toFixed(1)} pts
+                <span style={{ fontSize: '0.7rem', fontWeight: 700, fontFamily: 'monospace', color: art.delta_p_pts ? '#4ade80' : '#94a3b8' }}>
+                  {art.delta_p_pts === null ? '—' : `${art.delta_p_pts > 0 ? '+' : ''}${art.delta_p_pts.toFixed(1)} pts`}
                 </span>
               </div>
             </div>

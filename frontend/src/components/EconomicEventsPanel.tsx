@@ -33,7 +33,7 @@ export const EconomicEventsPanel: React.FC<EconomicEventsPanelProps> = ({ events
             Economic Events
           </h4>
           <span style={{ fontSize: '0.7rem', color: '#64748b' }}>
-            FOMC Schedule
+            Sample data
           </span>
         </div>
         <Calendar size={16} color="#64748b" />

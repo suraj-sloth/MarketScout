@@ -16,7 +16,7 @@ import { AgentRunResponse } from '../types';
 interface AgentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  accuracyPct: number;
+  accuracyPct: number | null;
   checksCount: number;
 }
 
@@ -146,10 +146,10 @@ export const AgentModal: React.FC<AgentModalProps> = ({
               <ShieldCheck size={24} color="#4ade80" />
               <div>
                 <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f8fafc' }}>
-                  Agent Accuracy Benchmark: {accuracyPct}%
+                  Agent Accuracy Benchmark: {accuracyPct === null ? '—' : `${accuracyPct}%`}
                 </div>
                 <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                  Tested against Polymarket CLOB ground-truth across {checksCount} validation rounds.
+                  Tested against Polymarket CLOB ground-truth across {checksCount} validation {checksCount === 1 ? 'check' : 'checks'}.
                 </div>
               </div>
             </div>
