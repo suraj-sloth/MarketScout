@@ -1,7 +1,60 @@
 # MarketScout
 
-Is this prediction market priced well — and does it agree with the world?
+> **Is this prediction market priced well — and does it agree with the world?**
 
-MarketScout checks Polymarket prices for quality (spread, depth, YES/NO coherence, freshness) and compares them with outside evidence scraped by TinyFish (CME FedWatch, news), giving each market a verdict: 🟢 Well-priced · 🟡 Check this · 🔴 Unreliable.
+MarketScout checks Polymarket prices for liquidity quality (spread, depth, YES/NO coherence, freshness) and cross-examines them against outside evidence scraped by **TinyFish** (CME FedWatch futures, breaking news reactions), assigning each market a clear verdict:
 
-See [planning.md](planning.md) for the full plan, concepts, math and task split.
+- 🟢 **Well-priced** — Tight spread, deep orderbook, coherent YES/NO books, aligned with the world.
+- 🟡 **Check this** — Discrepancies found (e.g. FedWatch divergence, unreacted news, or wide spread).
+- 🔴 **Unreliable** — Illiquid books, incoherent YES/NO pricing, or stale quotes.
+
+---
+
+## ⚡ Quick Start
+
+### 1. Backend (FastAPI + uv)
+```bash
+cd backend
+uv sync
+AGENT_SCHEDULE=0 uv run uvicorn app:app --port 8000
+```
+API runs on `http://localhost:8000`. Run test suite:
+```bash
+python -m unittest discover -s tests
+```
+*(37 passing unit tests)*
+
+### 2. Frontend (Vite + React + TypeScript)
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Dashboard runs on `http://localhost:5173`.
+Toggle between **Live API** and **Mock Mode** directly from the UI header!
+
+---
+
+## 🏗️ Architecture
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  Frontend (Vite + React + TS)                            │
+│  - Dark forest green fintech dashboard (LittleBee style)  │
+│  - Interactive SVG price chart with news impact dots     │
+│  - Depth & slippage calculator                           │
+│  - Live / Mock mode runtime toggle                       │
+│  - TinyFish autonomous agent console & step log          │
+└────────────────────────────┬─────────────────────────────┘
+                             │  /api/* (Proxied to :8000)
+┌────────────────────────────▼─────────────────────────────┐
+│  Backend (FastAPI)                                       │
+│  - collector/polymarket.py  Polymarket CLOB & Gamma API   │
+│  - agent/tinyfish.py        TinyFish autonomous scraper   │
+│  - engine/quality.py        Spread, depth, coherence math│
+│  - engine/evidence.py       FedWatch gap, news reaction   │
+│  - engine/verdict.py        🟢🟡🔴 Composite scoring     │
+└──────────────────────────────────────────────────────────┘
+```
+
+See [planning.md](planning.md) for full math specifications, thresholds, and task breakdown.
