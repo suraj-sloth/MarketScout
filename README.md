@@ -43,6 +43,7 @@ Toggle between **Live API** and **Mock Mode** directly from the UI header!
 │  - Dark forest green fintech dashboard (LittleBee style)  │
 │  - Interactive SVG price chart with news impact dots     │
 │  - Depth & slippage calculator                           │
+│  - Paper trading panel (simulated execution & P&L)       │
 │  - Live / Mock mode runtime toggle                       │
 │  - TinyFish autonomous agent console & step log          │
 └────────────────────────────┬─────────────────────────────┘
@@ -54,6 +55,8 @@ Toggle between **Live API** and **Mock Mode** directly from the UI header!
 │  - engine/quality.py        Spread, depth, coherence math│
 │  - engine/evidence.py       FedWatch gap, news reaction   │
 │  - engine/verdict.py        🟢🟡🔴 Composite scoring     │
+│  - engine/paper.py          Orderbook fill & mark engine  │
+│  - trader.py                TinyFish-triggered paper bot  │
 └──────────────────────────────────────────────────────────┘
 ```
 
