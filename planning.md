@@ -35,7 +35,7 @@ The verdict comes from:
 | Backend A1–A8 | ✅ Done, on `main`, 37 tests passing, serving **live** data |
 | Frontend B1–B8 | ✅ Done, fully functional dark fintech dashboard (LittleBee-inspired) |
 | Wire-up (A9) | ✅ Frontend works against live backend via Vite proxy. PR `fe/live-data-fixes` removes mock/fabricated values from live mode |
-| Events tracked | **Live: 1** (Fed "no change", Dec 9 2026). BTC $150k and Gov Shutdown exist **only in mock data** — add their slugs to `backend/config.py` `EVENTS` |
+| Events tracked | **Live: 3** — Fed "no change" Dec 9 (🟢), BTC $150k by Dec 31 2026 (🟢, `when-will-bitcoin-hit-150k` [4]), Gov shutdown by Dec 31 (🔴 thin + flat 24h, `government-shutdown-by` [1]) |
 | News sources | **Live: none run yet.** One example source (`news_reuters_fed`) in `sources.yaml`; Reuters/CNBC/Bloomberg/AP articles exist **only in mock data**. Next: add + test real `news_*` sources (B5) |
 | TinyFish | Verified: CME FedWatch scraper + Polymarket accuracy verification (100% / 5 matches) |
 
@@ -253,7 +253,7 @@ $$
 0.66 − 0.62 → **4 pts**.
 
 ### 5.3 Depth
-Dollar value of orders within 5 points of mid, both sides:
+Dollar value of orders within 5 points of mid, both sides, **summed over the YES and NO books** (in a 2% market almost all the dollars sit on the NO side):
 $$
 depth_\$ = \sum_{\text{levels within } \pm0.05} price \times size
 $$

@@ -79,9 +79,9 @@ def _market(event: dict, now: datetime, accuracy: dict) -> dict | None:
 
     checks: list[Check] = [
         q.check_spread(s.yes_book),
-        q.check_depth(s.yes_book),
+        q.check_depth(s.yes_book, s.no_book),
         q.check_coherence(s.yes_book, s.no_book),
-        q.check_freshness(s.history, now, s.yes_book),
+        q.check_freshness(s.history, now, s.yes_book, s.no_book),
     ]
     if event.get("fed") and st.outcome_mids:
         _, fw = _fedwatch(event["event_id"])
@@ -107,7 +107,7 @@ def _market(event: dict, now: datetime, accuracy: dict) -> dict | None:
         "yes_bid": s.yes_book.best_bid, "yes_ask": s.yes_book.best_ask,
         "no_bid": s.no_book.best_bid, "no_ask": s.no_book.best_ask,
         "spread_pts": r(q.spread_pts(s.yes_book), 2),
-        "depth_usd": round(q.depth_usd(s.yes_book)),
+        "depth_usd": round(q.market_depth_usd(s.yes_book, s.no_book)),
         "incoherence_pts": r(q.incoherence_pts(s.yes_book, s.no_book), 2),
         "last_change": _iso(q.last_change(s.history)),
         "verdict": verdict(checks),

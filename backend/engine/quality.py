@@ -34,6 +34,12 @@ def spread_pts(book: Book) -> float | None:
     return (book.best_ask - book.best_bid) * 100
 
 
+def market_depth_usd(yes_book: Book, no_book: Book | None = None) -> float:
+    """Depth of the whole market: YES and NO books trade the same question, and
+    in a 2% market nearly all the dollars sit on the NO side (98c/share)."""
+    return depth_usd(yes_book) + (depth_usd(no_book) if no_book is not None else 0.0)
+
+
 def depth_usd(book: Book, band: float = DEPTH_BAND) -> float:
     """Dollar value of resting orders within `band` of mid, both sides (§5.3)."""
     m = mid(book)
@@ -83,6 +89,8 @@ def _grade_high(value: float, limits: tuple[float, float]) -> str:
 
 
 def _fmt_usd(v: float) -> str:
+    if v >= 1_000_000:
+        return f"${v / 1_000_000:.1f}M"
     return f"${v / 1000:.0f}k" if v >= 1000 else f"${v:.0f}"
 
 
@@ -97,11 +105,11 @@ def check_spread(book: Book) -> Check:
     s = spread_pts(book)
     if s is None:
         return Check("spread", "bad", "empty book")
-    return Check("spread", _grade_low(s, SPREAD_PTS), f"{s:.0f} pts")
+    return Check("spread", _grade_low(s, SPREAD_PTS), f"{s:.1f} pts")
 
 
-def check_depth(book: Book) -> Check:
-    d = depth_usd(book)
+def check_depth(book: Book, no_book: Book | None = None) -> Check:
+    d = market_depth_usd(book, no_book)
     return Check("depth", _grade_high(d, DEPTH_USD), _fmt_usd(d))
 
 
@@ -117,7 +125,8 @@ def check_coherence(yes_book: Book, no_book: Book) -> Check:
     return Check("coherence", "ok", "YES and NO agree")
 
 
-def check_freshness(history: list[PricePoint], now: datetime, book: Book | None = None) -> Check:
+def check_freshness(history: list[PricePoint], now: datetime, book: Book | None = None,
+                    no_book: Book | None = None) -> Check:
     """A price that hasn't moved is only suspicious if the book is also wide or
     thin; a tight, deep market can sit at the same 1-cent tick for hours."""
     lc = last_change(history)
@@ -125,6 +134,8 @@ def check_freshness(history: list[PricePoint], now: datetime, book: Book | None 
         return Check("freshness", "warn", "no price history")
     hours = (now - lc).total_seconds() / 3600
     status = _grade_low(hours, FRESHNESS_HOURS)
-    if status != "ok" and book is not None and check_spread(book).status == "ok" and check_depth(book).status == "ok":
-        return Check("freshness", "ok", f"{_fmt_age(hours)} (stable: tight, deep book)")
-    return Check("freshness", status, _fmt_age(hours))
+    # last_change falls back to the first point when the price never moved.
+    detail = f"no change in {int(hours)}h+ of history" if len({pt.p for pt in history}) == 1 else _fmt_age(hours)
+    if status != "ok" and book is not None and check_spread(book).status == "ok" and check_depth(book, no_book).status == "ok":
+        return Check("freshness", "ok", f"{detail} (stable: tight, deep book)")
+    return Check("freshness", status, detail)

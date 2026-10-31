@@ -48,6 +48,14 @@ class DepthTest(unittest.TestCase):
         expected = 0.62 * 1000 + 0.61 * 3000 + 0.66 * 1500 + 0.67 * 2000
         self.assertAlmostEqual(q.depth_usd(YES), expected)
 
+    def test_market_depth_counts_both_books(self):
+        # 2% market: YES side is pennies, NO side holds the dollars
+        yes = book([(0.018, 1000)], [(0.020, 1000)])
+        no = book([(0.980, 20000)], [(0.982, 20000)])
+        self.assertAlmostEqual(q.market_depth_usd(yes, no), 18 + 20 + 980 * 20 + 982 * 20)
+        self.assertEqual(q.check_depth(yes).status, "bad")
+        self.assertEqual(q.check_depth(yes, no).status, "ok")
+
     def test_depth_excludes_far_levels(self):
         b = book([(0.62, 1000), (0.40, 99999)], [(0.66, 1000)])
         self.assertAlmostEqual(q.depth_usd(b), 620 + 660)
@@ -81,6 +89,7 @@ class FreshnessTest(unittest.TestCase):
     def test_never_changed_uses_first_point(self):
         h = self.series((600, 0.5), (300, 0.5))
         self.assertEqual(q.last_change(h), NOW - timedelta(minutes=600))
+        self.assertEqual(q.check_freshness(h, NOW).detail, "no change in 10h+ of history")
 
     def test_grades(self):
         self.assertEqual(q.check_freshness(self.series((60, .6), (50, .5)), NOW).status, "ok")

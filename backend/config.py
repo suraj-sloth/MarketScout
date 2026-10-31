@@ -7,6 +7,8 @@
 # FedWatch's hold probability.
 EVENTS = [
     {"event_id": "fed-dec", "slug": "fed-decision-in-december-20260729232808632", "market_index": 2, "fed": True},
+    {"event_id": "btc-150k-dec", "slug": "when-will-bitcoin-hit-150k", "market_index": 4},
+    {"event_id": "gov-shutdown-dec", "slug": "government-shutdown-by", "market_index": 1},
 ]
 
 POLL_SECONDS = 5
