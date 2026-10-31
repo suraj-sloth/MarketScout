@@ -15,19 +15,12 @@ export const MarketHeroChart: React.FC<MarketHeroChartProps> = ({
   articles,
   fedwatch
 }) => {
-  const [activeInterval, setActiveInterval] = useState<'1D' | '7D' | '1M' | 'ALL'>('1D');
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [hoverArticle, setHoverArticle] = useState<Article | null>(null);
 
-  // Fallback points if empty
-  const points = useMemo(() => {
-    if (priceHistory && priceHistory.length > 0) return priceHistory;
-    // Mock smooth curve
-    return Array.from({ length: 24 }).map((_, i) => ({
-      t: new Date(Date.now() - (23 - i) * 3600 * 1000).toISOString(),
-      p: 0.62 + Math.sin(i / 3) * 0.04
-    }));
-  }, [priceHistory]);
+  // No synthetic fallback: an empty history renders an empty state.
+  const points = priceHistory || [];
+  const hasHistory = points.length > 0;
 
   // Chart coordinates calculation
   const width = 800;
@@ -35,11 +28,13 @@ export const MarketHeroChart: React.FC<MarketHeroChartProps> = ({
   const padding = { top: 20, right: 30, bottom: 30, left: 40 };
 
   const minP = useMemo(() => {
+    if (!hasHistory) return 0;
     const val = Math.min(...points.map((p) => p.p));
     return Math.max(0, val - 0.05);
   }, [points]);
 
   const maxP = useMemo(() => {
+    if (!hasHistory) return 1;
     const val = Math.max(...points.map((p) => p.p));
     return Math.min(1, val + 0.05);
   }, [points]);
@@ -72,7 +67,14 @@ export const MarketHeroChart: React.FC<MarketHeroChartProps> = ({
     return `${pathD} L ${lastX} ${bottomY} L ${firstX} ${bottomY} Z`;
   }, [pathD, points]);
 
-  const currentMid = market.p_yes !== null ? (market.p_yes * 100).toFixed(1) : '64.0';
+  const currentMid = market.p_yes !== null ? (market.p_yes * 100).toFixed(1) : '—';
+  // Change over the fetched window (backend returns the last 24h).
+  const changePts = hasHistory ? (points[points.length - 1].p - points[0].p) * 100 : null;
+  const verdictBadge = {
+    good: { cls: 'badge-good', label: 'WELL-PRICED' },
+    check: { cls: 'badge-warn', label: 'CHECK THIS' },
+    unreliable: { cls: 'badge-bad', label: 'UNRELIABLE' }
+  }[market.verdict];
   const displayedPoint = hoverIndex !== null ? points[hoverIndex] : points[points.length - 1];
   const displayedProb = displayedPoint ? (displayedPoint.p * 100).toFixed(1) : currentMid;
 
@@ -130,8 +132,8 @@ export const MarketHeroChart: React.FC<MarketHeroChartProps> = ({
             <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Primary Audited Market
             </span>
-            <span className="badge-tag badge-good" style={{ fontSize: '0.65rem', padding: '2px 8px' }}>
-              POLYSCOUT VERIFIED
+            <span className={`badge-tag ${verdictBadge.cls}`} style={{ fontSize: '0.65rem', padding: '2px 8px' }}>
+              {verdictBadge.label}
             </span>
           </div>
           <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#f8fafc', margin: 0, maxWidth: '580px', lineHeight: 1.3 }}>
@@ -147,20 +149,22 @@ export const MarketHeroChart: React.FC<MarketHeroChartProps> = ({
               </span>
             </div>
 
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              background: 'rgba(34, 197, 94, 0.15)',
-              color: '#4ade80',
-              padding: '4px 10px',
-              borderRadius: '8px',
-              fontSize: '0.75rem',
-              fontWeight: 700
-            }}>
-              <ArrowUpRight size={14} />
-              <span>+2.4% 24h</span>
-            </div>
+            {changePts !== null && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                background: changePts >= 0 ? 'rgba(34, 197, 94, 0.15)' : 'rgba(248, 113, 113, 0.15)',
+                color: changePts >= 0 ? '#4ade80' : '#f87171',
+                padding: '4px 10px',
+                borderRadius: '8px',
+                fontSize: '0.75rem',
+                fontWeight: 700
+              }}>
+                {changePts >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                <span>{changePts >= 0 ? '+' : ''}{changePts.toFixed(1)} pts 24h</span>
+              </div>
+            )}
 
             {fedwatch && (
               <div style={{
@@ -177,9 +181,16 @@ export const MarketHeroChart: React.FC<MarketHeroChartProps> = ({
               }}>
                 <Compass size={14} />
                 <span>CME FedWatch: {(fedwatch.p * 100).toFixed(0)}%</span>
-                <span style={{ opacity: 0.8 }}>
-                  (Gap: {((market.p_yes || 0.64) * 100 - fedwatch.p * 100).toFixed(1)} pts)
-                </span>
+                {market.p_yes !== null && (
+                  <span style={{ opacity: 0.8 }}>
+                    (Gap: {(market.p_yes * 100 - fedwatch.p * 100).toFixed(1)} pts)
+                  </span>
+                )}
+                {fedwatch.from_cache && (
+                  <span style={{ opacity: 0.6 }}>
+                    · cached {new Date(fedwatch.ts).toISOString().slice(11, 16)} UTC
+                  </span>
+                )}
               </div>
             )}
           </div>
@@ -193,14 +204,13 @@ export const MarketHeroChart: React.FC<MarketHeroChartProps> = ({
           padding: '4px',
           border: '1px solid rgba(255, 255, 255, 0.08)'
         }}>
-          {(['1D', '7D', '1M', 'ALL'] as const).map((int) => (
+          {(['1D'] as const).map((int) => (
             <button
               key={int}
-              onClick={() => setActiveInterval(int)}
               style={{
-                background: activeInterval === int ? 'rgba(34, 197, 94, 0.2)' : 'transparent',
-                color: activeInterval === int ? '#4ade80' : '#64748b',
-                border: activeInterval === int ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid transparent',
+                background: 'rgba(34, 197, 94, 0.2)',
+                color: '#4ade80',
+                border: '1px solid rgba(34, 197, 94, 0.3)',
                 borderRadius: '8px',
                 padding: '6px 12px',
                 fontSize: '0.75rem',
@@ -217,6 +227,19 @@ export const MarketHeroChart: React.FC<MarketHeroChartProps> = ({
 
       {/* Interactive SVG Chart Canvas */}
       <div style={{ position: 'relative', width: '100%', height: `${height}px`, zIndex: 2 }}>
+        {!hasHistory && (
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#64748b',
+            fontSize: '0.85rem'
+          }}>
+            No price history yet — waiting for the backend's first poll.
+          </div>
+        )}
         <svg
           viewBox={`0 0 ${width} ${height}`}
           style={{ width: '100%', height: '100%', overflow: 'visible' }}

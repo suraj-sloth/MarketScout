@@ -34,9 +34,9 @@ The verdict comes from:
 | --- | --- |
 | Backend A1–A8 | ✅ Done, on `main`, 37 tests passing, serving **live** data |
 | Frontend B1–B8 | ✅ Done, fully functional dark fintech dashboard (LittleBee-inspired) |
-| Wire-up & Sanity Check (A9 / B9) | ✅ Complete: Live / mock toggle, auto-polling, agent execution console |
-| Events tracked | Fed Decision (Dec 2026), Bitcoin $150k (Year-End), US Government Shutdown |
-| News sources | Reuters, CNBC, Bloomberg, AP feeds mapped with reaction scoring & sentiment |
+| Wire-up (A9) | ✅ Frontend works against live backend via Vite proxy. PR `fe/live-data-fixes` removes mock/fabricated values from live mode |
+| Events tracked | **Live: 1** (Fed "no change", Dec 9 2026). BTC $150k and Gov Shutdown exist **only in mock data** — add their slugs to `backend/config.py` `EVENTS` |
+| News sources | **Live: none run yet.** One example source (`news_reuters_fed`) in `sources.yaml`; Reuters/CNBC/Bloomberg/AP articles exist **only in mock data**. Next: add + test real `news_*` sources (B5) |
 | TinyFish | Verified: CME FedWatch scraper + Polymarket accuracy verification (100% / 5 matches) |
 
 Real result to use in the demo: FedWatch and Polymarket agree within 2 pts (hike 25 bps ≈ 70.5% vs 70.7%; no change ≈ 27.5% vs 29.3%). Agent accuracy 100% (5/5).
@@ -452,7 +452,7 @@ Stack: Vite + React + TypeScript, plain CSS, `fetch` + `setInterval`. Price line
 | ✅ B2 | 0:20 | Pick 3 Polymarket events (Fed + BTC $150k + Gov Shutdown) + news sources | Modeled & verified in contract & live |
 | ✅ B3 | 0:40 | `types.ts` from contract; `api.ts` with mock/live runtime switch | Mock and live data load seamlessly |
 | ✅ B4 | 1:00 | `MarketCardsGrid`: probability bar, spread, depth, verdict badges, sentiment badge | Renders full interactive cards |
-| ✅ B5 | 1:40 | Add news entries to `sources.yaml` & `NewsReactionFeed` with delta price impacts | Schema validated & feeds rendering |
+| ⏳ B5 | 1:40 | Add news entries to `sources.yaml` & `NewsReactionFeed` with delta price impacts | Feed renders ✅; real `news_*` sources not yet added/run |
 | ✅ B6 | 2:00 | `MarketHeroChart`: glowing SVG polyline, article milestone dots with hover popups | Renders interactive chart |
 | ✅ B7 | 2:30 | `AgentModal` & console: source dropdown, animated step logs, accuracy benchmark | Interactive agent runner works |
 | ✅ B8 | 2:50 | Depth & slippage calculator, session clocks, economic events, footer disclaimer | Complete dashboard fully functional |

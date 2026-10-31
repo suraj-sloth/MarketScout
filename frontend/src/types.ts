@@ -67,7 +67,7 @@ export interface Article {
   direction: number; // 1 = cut/more likely, -1 = hold/hike/less likely, 0 = neutral
   reason: string;
   reaction: ArticleReaction;
-  delta_p_pts: number;
+  delta_p_pts: number | null; // null while pending or for neutral articles
 }
 
 export interface EvidenceResponse {

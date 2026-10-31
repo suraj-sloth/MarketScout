@@ -194,13 +194,14 @@ export const App: React.FC = () => {
             onSelectMarket={handleSelectMarket}
           />
 
-          {/* Bottom Row Section (Matching LittleBee: Economic Events + News Reaction Feed + Market Hours) */}
+          {/* Bottom Row: News Reaction Feed + Market Hours. Economic events are
+              sample data with no live source, so they only appear in mock mode. */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 1.25fr 1fr',
+            gridTemplateColumns: isMock ? '1fr 1.25fr 1fr' : '1.25fr 1fr',
             gap: '20px'
           }}>
-            <EconomicEventsPanel events={MOCK_ECONOMIC_EVENTS} />
+            {isMock && <EconomicEventsPanel events={MOCK_ECONOMIC_EVENTS} />}
             <NewsReactionFeed articles={evidenceData.articles} />
             <MarketHoursWidget />
           </div>
@@ -233,8 +234,8 @@ export const App: React.FC = () => {
       <AgentModal
         isOpen={isAgentModalOpen}
         onClose={() => setIsAgentModalOpen(false)}
-        accuracyPct={marketsData.agent_accuracy.value !== null ? Math.round(marketsData.agent_accuracy.value * 100) : 92}
-        checksCount={marketsData.agent_accuracy.checks || 12}
+        accuracyPct={marketsData.agent_accuracy.value !== null ? Math.round(marketsData.agent_accuracy.value * 100) : null}
+        checksCount={marketsData.agent_accuracy.checks}
       />
     </div>
   );

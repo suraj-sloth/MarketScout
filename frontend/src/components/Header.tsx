@@ -29,7 +29,7 @@ export const Header: React.FC<HeaderProps> = ({
   onRefresh,
   isRefreshing,
 }) => {
-  const accuracyPct = accuracy.value !== null ? Math.round(accuracy.value * 100) : 92;
+  const accuracyPct = accuracy.value !== null ? Math.round(accuracy.value * 100) : null;
 
   return (
     <header style={{
@@ -125,10 +125,10 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#4ade80' }}>
-                {accuracyPct}%
+                {accuracyPct === null ? '—' : `${accuracyPct}%`}
               </span>
               <span style={{ fontSize: '0.7rem', color: '#64748b' }}>
-                ({accuracy.checks} tests)
+                ({accuracy.checks} {accuracy.checks === 1 ? 'check' : 'checks'})
               </span>
             </div>
           </div>
