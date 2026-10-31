@@ -232,10 +232,10 @@ export const MOCK_AGENT_RUNS: Record<string, AgentRunResponse> = {
     schema_valid: true,
     from_cache: false
   },
-  news_reuters_fed: {
+  news_cnbc_fed: {
     run_id: 'r_news_demo',
     status: 'done',
-    source_id: 'news_reuters_fed',
+    source_id: 'news_cnbc_fed',
     steps: [
       'Connected to Reuters US Markets RSS & live feed',
       'Identified 4 FOMC related articles published within last 48 hours',

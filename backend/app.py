@@ -45,6 +45,28 @@ def evidence(event_id: str) -> dict:
     return out
 
 
+KIND_LABELS = {"outside_view": "Outside view", "agent_check": "Accuracy check", "news": "News"}
+
+
+@app.get("/api/sources")
+def sources() -> dict:
+    """Web sources TinyFish can run, straight from sources.yaml, with the time
+    of the last cached result."""
+    cache = tinyfish.read_cache()
+    return {"sources": [
+        {
+            "id": s["id"],
+            "name": s.get("name", s["id"]),
+            "kind": s["kind"],
+            "kind_label": KIND_LABELS.get(s["kind"], s["kind"]),
+            "event": s.get("event"),
+            "url": s["url"],
+            "last_run": cache.get(s["id"], {}).get("ts"),
+        }
+        for s in tinyfish.load_sources().values()
+    ]}
+
+
 class AgentRunRequest(BaseModel):
     source_id: str
 

@@ -35,8 +35,8 @@ The verdict comes from:
 | Backend A1–A8 | ✅ Done, on `main`, 37 tests passing, serving **live** data |
 | Frontend B1–B8 | ✅ Done, fully functional dark fintech dashboard (LittleBee-inspired) |
 | Wire-up (A9) | ✅ Frontend works against live backend via Vite proxy. PR `fe/live-data-fixes` removes mock/fabricated values from live mode |
-| Events tracked | **Live: 3** — Fed "no change" Dec 9 (🟢), BTC $150k by Dec 31 2026 (🟢, `when-will-bitcoin-hit-150k` [4]), Gov shutdown by Dec 31 (🔴 thin + flat 24h, `government-shutdown-by` [1]) |
-| News sources | **Live: none run yet.** One example source (`news_reuters_fed`) in `sources.yaml`; Reuters/CNBC/Bloomberg/AP articles exist **only in mock data**. Next: add + test real `news_*` sources (B5) |
+| Events tracked | **Live: 3** — Fed "hike 25 bps" Dec 9 (🟢, index 3; clearer than "no change" for news direction), BTC $150k by Dec 31 2026 (🟢, `when-will-bitcoin-hit-150k` [4]), Gov shutdown by Dec 31 (🔴 thin + flat, `government-shutdown-by` [1]) |
+| News sources | **Live:** CNBC Fed (`news_cnbc_fed`), CoinDesk (`news_coindesk_btc`), CNBC politics (`news_cnbc_shutdown`, currently 0 shutdown articles). Reuters (401), AP and The Hill (403) block requests; Cointelegraph timed out twice — dropped. Agent console dropdown reads `GET /api/sources` (= `sources.yaml`) |
 | TinyFish | Verified: CME FedWatch scraper + Polymarket accuracy verification (100% / 5 matches) |
 
 Real result to use in the demo: FedWatch and Polymarket agree within 2 pts (hike 25 bps ≈ 70.5% vs 70.7%; no change ≈ 27.5% vs 29.3%). Agent accuracy 100% (5/5).
@@ -170,7 +170,7 @@ An AI reading a web page can misread it. So TinyFish also reads the Polymarket p
 | --- | --- |
 | Event + markets (question, end date, rules, token IDs) | `GET https://gamma-api.polymarket.com/events?slug=<slug>` |
 | Order book per outcome token | `GET https://clob.polymarket.com/book?token_id=<token_id>` |
-| Price history | `GET https://clob.polymarket.com/prices-history?market=<token_id>&interval=1d&fidelity=5` |
+| Price history | `GET https://clob.polymarket.com/prices-history?market=<token_id>&interval=1w&fidelity=15` (7 days, so 48h-old articles can be measured) |
 
 Each market has 2 token IDs (YES, NO) in `clobTokenIds`.
 
@@ -452,7 +452,7 @@ Stack: Vite + React + TypeScript, plain CSS, `fetch` + `setInterval`. Price line
 | ✅ B2 | 0:20 | Pick 3 Polymarket events (Fed + BTC $150k + Gov Shutdown) + news sources | Modeled & verified in contract & live |
 | ✅ B3 | 0:40 | `types.ts` from contract; `api.ts` with mock/live runtime switch | Mock and live data load seamlessly |
 | ✅ B4 | 1:00 | `MarketCardsGrid`: probability bar, spread, depth, verdict badges, sentiment badge | Renders full interactive cards |
-| ⏳ B5 | 1:40 | Add news entries to `sources.yaml` & `NewsReactionFeed` with delta price impacts | Feed renders ✅; real `news_*` sources not yet added/run |
+| ✅ B5 | 1:40 | Add news entries to `sources.yaml` & `NewsReactionFeed` with delta price impacts | Feed renders ✅; real `news_*` sources not yet added/run |
 | ✅ B6 | 2:00 | `MarketHeroChart`: glowing SVG polyline, article milestone dots with hover popups | Renders interactive chart |
 | ✅ B7 | 2:30 | `AgentModal` & console: source dropdown, animated step logs, accuracy benchmark | Interactive agent runner works |
 | ✅ B8 | 2:50 | Depth & slippage calculator, session clocks, economic events, footer disclaimer | Complete dashboard fully functional |

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   X, 
   Play, 
@@ -10,8 +10,8 @@ import {
   Terminal as TerminalIcon,
   Code
 } from 'lucide-react';
-import { triggerAgentRun } from '../api';
-import { AgentRunResponse } from '../types';
+import { fetchSources, triggerAgentRun } from '../api';
+import { AgentRunResponse, AgentSource } from '../types';
 
 interface AgentModalProps {
   isOpen: boolean;
@@ -32,6 +32,14 @@ export const AgentModal: React.FC<AgentModalProps> = ({
     'Agent session idle. Select a target source and click "Trigger Run" below.'
   ]);
   const [runResult, setRunResult] = useState<AgentRunResponse | null>(null);
+  const [sources, setSources] = useState<AgentSource[]>([]);
+
+  // Reload on open so new sources.yaml entries and last-run times show up.
+  useEffect(() => {
+    if (isOpen) {
+      fetchSources().then(setSources);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -180,10 +188,14 @@ export const AgentModal: React.FC<AgentModalProps> = ({
                   outline: 'none'
                 }}
               >
-                <option value="fedwatch">fedwatch — CME FedWatch Rate Probability Table</option>
-                <option value="pm_page_fed">pm_page_fed — Polymarket Web Page Accuracy Check</option>
-                <option value="news_reuters_fed">news_reuters_fed — Reuters 48h Fed Articles & Direction</option>
-                <option value="all">all — Sequential Run of All Registered Sources</option>
+                {sources.length === 0 && <option value="">No sources loaded</option>}
+                {sources.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.kind_label} · {s.name}{s.event ? ` (${s.event})` : ''} — last run{' '}
+                    {s.last_run ? `${new Date(s.last_run).toISOString().slice(11, 16)} UTC` : 'never'}
+                  </option>
+                ))}
+                {sources.length > 0 && <option value="all">All sources (runs one after another)</option>}
               </select>
             </div>
 

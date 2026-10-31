@@ -91,7 +91,7 @@ async def fetch_book(client: httpx.AsyncClient, token_id: str) -> Book:
     )
 
 
-async def fetch_history(client: httpx.AsyncClient, token_id: str, interval: str = "1d", fidelity_min: int = 5) -> list[PricePoint]:
+async def fetch_history(client: httpx.AsyncClient, token_id: str, interval: str = "1w", fidelity_min: int = 15) -> list[PricePoint]:
     r = await client.get(
         f"{CLOB}/prices-history",
         params={"market": token_id, "interval": interval, "fidelity": fidelity_min},

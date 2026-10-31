@@ -1,4 +1,5 @@
-import { MarketsResponse, EvidenceResponse, AgentRunResponse } from './types';
+import { MarketsResponse, EvidenceResponse, AgentRunResponse, AgentSource } from './types';
+import sourcesContract from '../../contract/sources.json';
 import { MOCK_MARKETS_RESPONSE, MOCK_EVIDENCE_MAP, MOCK_AGENT_RUNS } from './mockData';
 
 // Allow runtime override or environment variable
@@ -43,6 +44,22 @@ export async function fetchMarkets(): Promise<{ data: MarketsResponse; isMock: b
 
 function emptyEvidence(eventId: string): EvidenceResponse {
   return { event_id: eventId, price_history: [], fedwatch: null, articles: [] };
+}
+
+/** TinyFish sources, read by the backend from backend/sources.yaml. */
+export async function fetchSources(): Promise<AgentSource[]> {
+  if (currentMode === 'live') {
+    try {
+      const res = await fetch('/api/sources', { signal: AbortSignal.timeout(6000) });
+      if (res.ok) {
+        return (await res.json()).sources;
+      }
+    } catch (err) {
+      console.warn('Error fetching agent sources', err);
+    }
+    return [];
+  }
+  return sourcesContract.sources as AgentSource[];
 }
 
 export async function fetchEvidence(eventId: string): Promise<{ data: EvidenceResponse; isMock: boolean }> {

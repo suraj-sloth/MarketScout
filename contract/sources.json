@@ -1,0 +1,8 @@
+{
+  "sources": [
+    {"id": "fedwatch", "name": "fedwatch", "kind": "outside_view", "kind_label": "Outside view", "event": "fed-dec", "url": "https://www.cmegroup.com/markets/interest-rates/cme-fedwatch-tool.html", "last_run": "2026-10-31T06:51:58+00:00"},
+    {"id": "pm_page_fed", "name": "pm_page_fed", "kind": "agent_check", "kind_label": "Accuracy check", "event": "fed-dec", "url": "https://polymarket.com/event/fed-decision-in-december-20260729232808632", "last_run": "2026-10-31T06:53:12+00:00"},
+    {"id": "news_cnbc_fed", "name": "CNBC", "kind": "news", "kind_label": "News", "event": "fed-dec", "url": "https://www.cnbc.com/federal-reserve/", "last_run": null},
+    {"id": "news_coindesk_btc", "name": "CoinDesk", "kind": "news", "kind_label": "News", "event": "btc-150k-dec", "url": "https://www.coindesk.com/markets", "last_run": null}
+  ]
+}

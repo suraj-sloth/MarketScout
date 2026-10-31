@@ -45,7 +45,7 @@ def _articles(event_id: str) -> list[ev.Article]:
             t = _parse_time(item.get("published_at", ""))
             if t is None or item.get("direction") not in (-1, 0, 1):
                 continue  # can't place it in time / unusable label
-            out.append(ev.Article(source["id"].removeprefix("news_").split("_")[0].title(),
+            out.append(ev.Article(source.get("name", source["id"]),
                                   item["headline"], item["url"], t, item["direction"], item["reason"]))
     return out
 

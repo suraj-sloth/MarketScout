@@ -57,7 +57,7 @@ export interface FedWatchData {
   probabilities?: Array<{ range_bps: string; prob: number }>;
 }
 
-export type ArticleReaction = 'reacted' | 'counter' | 'unreacted' | 'flat' | 'neutral' | 'pending';
+export type ArticleReaction = 'reacted' | 'counter' | 'unreacted' | 'flat' | 'neutral' | 'pending' | 'date_only';
 
 export interface Article {
   source: string;
@@ -110,3 +110,13 @@ export interface EconomicEvent {
   impact: 'high' | 'medium' | 'low';
 }
 
+
+export interface AgentSource {
+  id: string;
+  name: string;
+  kind: 'outside_view' | 'agent_check' | 'news' | string;
+  kind_label: string;
+  event: string | null;
+  url: string;
+  last_run: string | null;
+}

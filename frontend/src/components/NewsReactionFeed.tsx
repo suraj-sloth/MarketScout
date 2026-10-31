@@ -27,12 +27,19 @@ export const NewsReactionFeed: React.FC<NewsReactionFeedProps> = ({ articles }) 
             COUNTER-MOVE
           </span>
         );
-      default:
+      default: {
+        const label = {
+          flat: 'NO MOVE',
+          pending: 'PENDING',
+          date_only: 'DATE ONLY',
+          neutral: 'NEUTRAL'
+        }[reaction] ?? String(reaction).toUpperCase();
         return (
           <span className="badge-tag" style={{ background: 'rgba(255,255,255,0.08)', color: '#94a3b8', fontSize: '0.65rem', padding: '2px 6px' }}>
-            NEUTRAL
+            {label}
           </span>
         );
+      }
     }
   };
 

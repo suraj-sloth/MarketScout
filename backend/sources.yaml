@@ -26,16 +26,47 @@
     outcomes: [{name: str, prob: float}]
   refresh_minutes: 15
 
-- id: news_reuters_fed
+- id: news_cnbc_fed
+  name: CNBC
   kind: news
   event: fed-dec
-  url: https://www.reuters.com/markets/us/
+  url: https://www.cnbc.com/federal-reserve/
   goal: >
     List up to 5 articles from the last 48h about the Federal Reserve's next
     rate decision. For each: headline, URL, published time (UTC ISO 8601),
-    whether it makes NO CHANGE in rates at the December 2026 meeting more
+    whether it makes a 25 bps rate HIKE at the December 2026 meeting more
     likely (1), less likely (-1) or is neutral (0), and a one-sentence reason
     quoting the article.
+  schema:
+    items: [{headline: str, url: str, published_at: str, direction: int, reason: str}]
+  refresh_minutes: 15
+
+- id: news_coindesk_btc
+  name: CoinDesk
+  kind: news
+  event: btc-150k-dec
+  url: https://www.coindesk.com/markets
+  goal: >
+    List up to 5 articles from the last 48h about the Bitcoin price outlook.
+    For each: headline, URL, published time (UTC ISO 8601), whether it makes
+    Bitcoin reaching $150,000 by December 31, 2026 more likely (1), less
+    likely (-1) or is neutral (0), and a one-sentence reason quoting the
+    article.
+  schema:
+    items: [{headline: str, url: str, published_at: str, direction: int, reason: str}]
+  refresh_minutes: 15
+
+- id: news_cnbc_shutdown
+  name: CNBC
+  kind: news
+  event: gov-shutdown-dec
+  url: https://www.cnbc.com/politics/
+  goal: >
+    List up to 5 articles from the last 48h about US government funding or a
+    possible government shutdown. For each: headline, URL, published time
+    (UTC ISO 8601), whether it makes a US government shutdown by December 31,
+    2026 more likely (1), less likely (-1) or is neutral (0), and a
+    one-sentence reason quoting the article.
   schema:
     items: [{headline: str, url: str, published_at: str, direction: int, reason: str}]
   refresh_minutes: 15

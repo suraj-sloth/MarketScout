@@ -76,6 +76,11 @@ class NewsTest(unittest.TestCase):
         self.assertAlmostEqual(by_url["up"].delta_p_pts, 5.0)
         self.assertEqual(by_url["down"].reaction, "counter")
 
+    def test_date_only_article_is_not_measured(self):
+        hist = [PricePoint(at(h), 0.5 + h / 100) for h in range(0, 16)]
+        out, _ = ev.analyse_news([art(NOW.replace(hour=0), 1, "d")], hist, NOW)
+        self.assertEqual((out[0].reaction, out[0].delta_p_pts), ("date_only", None))
+
     def test_pending_inside_window(self):
         out, _ = ev.analyse_news([art(NOW - timedelta(minutes=10), 1, "new")], self.flat_history(), NOW)
         self.assertEqual(out[0].reaction, "pending")

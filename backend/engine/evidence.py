@@ -58,7 +58,7 @@ class Article:
     published_at: datetime
     direction: int  # +1 YES more likely, -1 less likely, 0 neutral
     reason: str
-    reaction: str = ""  # reacted | counter | unreacted | flat | neutral | pending
+    reaction: str = ""  # reacted | counter | unreacted | flat | neutral | pending | date_only
     delta_p_pts: float | None = None
 
 
@@ -88,6 +88,9 @@ def classify(a: Article, history: list[PricePoint], now: datetime) -> Article:
     after = a.published_at + timedelta(minutes=REACTION_WINDOW_MIN)
     if a.direction == 0:
         return replace(a, reaction="neutral")
+    if (a.published_at.hour, a.published_at.minute, a.published_at.second) == (0, 0, 0):
+        # Source only gave a date; an hour-scale reaction can't be measured.
+        return replace(a, reaction="date_only")
     if now < after:
         return replace(a, reaction="pending")
     p0 = price_at(history, a.published_at - timedelta(minutes=5))
