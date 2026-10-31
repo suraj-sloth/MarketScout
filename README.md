@@ -2,7 +2,7 @@
 
 > **Is this prediction market priced well — and does it agree with the world?**
 
-MarketScout checks Polymarket prices for liquidity quality (spread, depth, YES/NO coherence, freshness) and cross-examines them against outside evidence scraped by **TinyFish** (CME FedWatch futures, breaking news reactions), assigning each market a clear verdict:
+MarketScout checks Polymarket prices for liquidity quality (spread, depth, YES/NO coherence, freshness) and cross-examines them against outside evidence scraped by **TinyFish** (CME FedWatch futures, real-time news reactions from CNBC & CoinDesk), assigning each market a clear verdict:
 
 - 🟢 **Well-priced** — Tight spread, deep orderbook, coherent YES/NO books, aligned with the world.
 - 🟡 **Check this** — Discrepancies found (e.g. FedWatch divergence, unreacted news, or wide spread).
@@ -22,7 +22,7 @@ API runs on `http://localhost:8000`. Run test suite:
 ```bash
 python -m unittest discover -s tests
 ```
-*(37 passing unit tests)*
+*(44 passing unit tests)*
 
 ### 2. Frontend (Vite + React + TypeScript)
 ```bash
