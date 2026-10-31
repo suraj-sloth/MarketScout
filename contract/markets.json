@@ -1,0 +1,64 @@
+{
+  "as_of": "2026-10-31T14:00:00Z",
+  "agent_accuracy": {"value": 0.92, "checks": 12},
+  "markets": [
+    {
+      "event_id": "fed-dec",
+      "question": "Will the Fed cut rates in December?",
+      "url": "https://polymarket.com/event/fed-decision-in-december",
+      "end_date": "2026-12-16",
+      "p_yes": 0.64,
+      "yes_bid": 0.62, "yes_ask": 0.66, "no_bid": 0.34, "no_ask": 0.38,
+      "spread_pts": 4.0, "depth_usd": 18000, "incoherence_pts": 0.0,
+      "last_change": "2026-10-31T13:10:00Z",
+      "verdict": "check",
+      "checks": [
+        {"name": "spread", "status": "warn", "detail": "4 pts"},
+        {"name": "depth", "status": "ok", "detail": "$18k"},
+        {"name": "coherence", "status": "ok", "detail": "YES and NO agree"},
+        {"name": "freshness", "status": "ok", "detail": "changed 50 min ago"},
+        {"name": "fedwatch_gap", "status": "warn", "detail": "FedWatch 72% vs 64% (-8 pts)"},
+        {"name": "news_reaction", "status": "warn", "detail": "2 articles, price flat 60 min"}
+      ],
+      "sentiment": {"value": -0.6, "label": "leans NO", "n_articles": 4}
+    },
+    {
+      "event_id": "btc-150k-dec",
+      "question": "Will Bitcoin reach $150,000 by December 31?",
+      "url": "https://polymarket.com/event/what-price-will-bitcoin-hit-in-2026",
+      "end_date": "2026-12-31",
+      "p_yes": 0.21,
+      "yes_bid": 0.20, "yes_ask": 0.22, "no_bid": 0.78, "no_ask": 0.80,
+      "spread_pts": 2.0, "depth_usd": 54000, "incoherence_pts": 0.0,
+      "last_change": "2026-10-31T13:58:00Z",
+      "verdict": "good",
+      "checks": [
+        {"name": "spread", "status": "ok", "detail": "2 pts"},
+        {"name": "depth", "status": "ok", "detail": "$54k"},
+        {"name": "coherence", "status": "ok", "detail": "YES and NO agree"},
+        {"name": "freshness", "status": "ok", "detail": "changed 2 min ago"},
+        {"name": "news_reaction", "status": "ok", "detail": "price followed 3 of 3 articles"}
+      ],
+      "sentiment": {"value": 0.1, "label": "mixed", "n_articles": 5}
+    },
+    {
+      "event_id": "gov-shutdown-dec",
+      "question": "Will there be a US government shutdown in December?",
+      "url": "https://polymarket.com/event/us-government-shutdown",
+      "end_date": "2026-12-31",
+      "p_yes": 0.40,
+      "yes_bid": 0.29, "yes_ask": 0.51, "no_bid": 0.49, "no_ask": 0.71,
+      "spread_pts": 22.0, "depth_usd": 600, "incoherence_pts": 0.0,
+      "last_change": "2026-10-31T04:30:00Z",
+      "verdict": "unreliable",
+      "checks": [
+        {"name": "spread", "status": "bad", "detail": "22 pts"},
+        {"name": "depth", "status": "bad", "detail": "$600"},
+        {"name": "coherence", "status": "ok", "detail": "YES and NO agree"},
+        {"name": "freshness", "status": "bad", "detail": "changed 9h 30m ago"},
+        {"name": "news_reaction", "status": "ok", "detail": "no relevant news"}
+      ],
+      "sentiment": {"value": 0.0, "label": "mixed", "n_articles": 0}
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+# Web sources TinyFish reads (planning.md §3). Adding a source = adding an entry.
+# kind: outside_view | news | agent_check
+# Person B adds the news_* entries (task B5).
+
+- id: fedwatch
+  kind: outside_view
+  event: fed-dec
+  url: https://www.cmegroup.com/markets/interest-rates/cme-fedwatch-tool.html
+  goal: >
+    For the next FOMC meeting, return the meeting date (YYYY-MM-DD) and the
+    probability of each target rate range in basis points, as shown in the
+    probability table.
+  schema:
+    meeting_date: str
+    probabilities: [{range_bps: str, prob: float}]
+  refresh_minutes: 15
+
+- id: pm_page_fed
+  kind: agent_check
+  event: fed-dec
+  url: https://polymarket.com/event/fed-decision-in-december
+  goal: >
+    Return each outcome shown on this page and its displayed probability as a
+    number between 0 and 1.
+  schema:
+    outcomes: [{name: str, prob: float}]
+  refresh_minutes: 15
+
+- id: news_reuters_fed
+  kind: news
+  event: fed-dec
+  url: https://www.reuters.com/markets/us/
+  goal: >
+    List up to 5 articles from the last 48h about the Federal Reserve's next
+    rate decision. For each: headline, URL, published time (UTC ISO 8601),
+    whether it makes a rate CUT more likely (1), less likely (-1) or neutral
+    (0), and a one-sentence reason quoting the article.
+  schema:
+    items: [{headline: str, url: str, published_at: str, direction: int, reason: str}]
+  refresh_minutes: 15

@@ -1,0 +1,19 @@
+{
+  "run_id": "r1",
+  "status": "done",
+  "source_id": "fedwatch",
+  "steps": [
+    "Opened cmegroup.com FedWatch",
+    "Selected December meeting",
+    "Read probability table"
+  ],
+  "result": {
+    "meeting_date": "2026-12-16",
+    "probabilities": [
+      {"range_bps": "350-375", "prob": 0.72},
+      {"range_bps": "375-400", "prob": 0.28}
+    ]
+  },
+  "schema_valid": true,
+  "from_cache": false
+}
