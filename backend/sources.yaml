@@ -18,7 +18,7 @@
 - id: pm_page_fed
   kind: agent_check
   event: fed-dec
-  url: https://polymarket.com/event/fed-decision-in-december
+  url: https://polymarket.com/event/fed-decision-in-december-20260729232808632
   goal: >
     Return each outcome shown on this page and its displayed probability as a
     number between 0 and 1.

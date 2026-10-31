@@ -204,11 +204,15 @@ Incoherence > spread, or overround < 0 → something's off (stale or odd book).
 `age = now − last price change (from history)`. Stale if > 6 hours with no change.
 
 ### 5.6 FedWatch gap
-FedWatch gives probabilities per target-rate range. Sum the ranges below the current rate = $p_{cut}^{FW}$.
+The Polymarket Fed event is **5 separate yes/no markets**: cut 50+, cut 25, no change, hike 25, hike 50+. FedWatch gives a probability per target-rate range. Map each FedWatch range to a change vs the current range (e.g. current 375–400: 400–425 = hike 25, 375–400 = no change) and compare outcome by outcome:
 $$
-gap_{pts} = (p^{PM} - p^{FW}) \times 100
+gap_{pts}(o) = (p^{PM}_o - p^{FW}_o) \times 100
 $$
-Example: Polymarket 64%, FedWatch 72% → **−8 pts**. Only compare if the meeting date matches and both mean "cut of any size" (otherwise label *related, not equivalent*).
+The check uses the tracked market (no change) and also reports the largest gap across outcomes.
+
+Live reading, 31 Oct 2026: hike 25 → Polymarket 70.5% vs FedWatch 70.7% (−0.2); no change → 27.5% vs 29.3% (−1.8). The two markets agree — an honest ✅ result.
+
+Only compare if the meeting date matches (both 9 Dec 2026). TinyFish FedWatch runs take 2–5 min including queue time, so they run in the background and the UI shows the last cached reading.
 
 ### 5.7 News reaction
 For an article published at $t_0$ with direction $d \in \{-1, 0, +1\}$:

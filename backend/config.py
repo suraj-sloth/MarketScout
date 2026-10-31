@@ -2,9 +2,11 @@
 
 # Polymarket events we track. B2 picks the final list; slugs come from
 # polymarket.com/event/<slug>. `market_index` picks one market inside a
-# multi-market event (e.g. "25 bps cut" inside "Fed decision in December").
+# multi-market event. The Fed event has 5 markets (cut 50+, cut 25, no change,
+# hike 25, hike 50+); index 2 = "no change", the most liquid, compared with
+# FedWatch's hold probability.
 EVENTS = [
-    {"event_id": "fed-dec", "slug": "fed-decision-in-december", "market_index": 0},
+    {"event_id": "fed-dec", "slug": "fed-decision-in-december-20260729232808632", "market_index": 2},
 ]
 
 POLL_SECONDS = 5
