@@ -26,6 +26,72 @@ The verdict comes from:
 
 ---
 
+## ▶ Status and handoff (updated 31 Oct, after A1–A8)
+
+### Where things are
+
+| Area | Status |
+| --- | --- |
+| Backend A1–A8 | ✅ Done, on `main`, 37 tests passing, serving **live** data |
+| A9 (wire-up + sanity check) | Waiting on frontend |
+| Frontend B1–B9 | ⏳ Not started — **this is the next work** |
+| Events tracked | 1 (Fed "no change", Dec 9 2026). B2 adds 2 more |
+| News sources | 1 example (`news_reuters_fed`) in `sources.yaml`, **not yet run** — so live `articles` is empty and sentiment shows 0 articles |
+| TinyFish | Works. FedWatch runs take 2–5 min and sometimes hang → backend retries and falls back to `agent_cache.json` |
+
+Real result to use in the demo: FedWatch and Polymarket agree within 2 pts (hike 25 bps ≈ 70.5% vs 70.7%; no change ≈ 27.5% vs 29.3%). Agent accuracy 100% (5/5).
+
+### Instructions for Person B's coding agent
+
+You are picking up the **frontend** (tasks B1–B9 in Section 8). Read Sections 2, 6, 7 and 8 first.
+
+**Scope**
+- Work only in `frontend/`. Do **not** edit `backend/` or `contract/` except:
+  - B5 (news sources) → edit `backend/sources.yaml` only, in its own branch/PR.
+  - If the UI needs a field the contract lacks → open an issue or a PR to `contract/` only; don't change backend code.
+- Never commit `.env`, `.env.local`, `agent_cache.json` (all gitignored — keep it that way).
+
+**Setup**
+```sh
+git pull origin main
+# backend (needs Person A's TinyFish key in backend/.env for agent runs; market data works without it)
+cd backend && uv sync && AGENT_SCHEDULE=0 uv run uvicorn app:app --port 8000
+# frontend
+cd frontend && npm create vite@latest . -- --template react-ts && npm i && npm run dev
+```
+`AGENT_SCHEDULE=0` stops the 15-min TinyFish loop so dev doesn't burn credits; cached readings are still served.
+
+Vite proxy (`frontend/vite.config.ts`):
+```ts
+server: { proxy: { "/api": "http://localhost:8000" } }
+```
+Mock mode loads `../contract/*.json`; live mode calls `/api/...`. Switch with `VITE_API_MODE=mock|live` in `frontend/.env.local`.
+
+**Git workflow (per task)**
+```sh
+git checkout main && git pull
+git checkout -b fe/b4-market-card          # be/b5-news-sources for the sources.yaml task
+# ...work, small commits...
+git push -u origin fe/b4-market-card
+gh pr create --title "[B4] MarketCard component" --body "Closes #<issue>. What/how tested."
+```
+One task = one branch = one PR. Run `npm run build` before pushing (must pass with no TS errors). Self-merge after a quick look is fine; for `sources.yaml` PRs, tag Person A.
+
+**Live API facts that differ from or add to the mock contract**
+- `verdict` ∈ `good | check | unreliable`; check `status` ∈ `ok | warn | bad`. Map to 🟢🟡🔴 / ✅⚠️❌.
+- Live Fed question is *"Will there be no change in Fed interest rates after the December 2026 meeting?"* (the mock says "cut" — just display `question`).
+- Numbers can be `null` (empty book): `p_yes`, `yes_bid`, `spread_pts`, `incoherence_pts`, `agent_accuracy.value`. Render "—".
+- `GET /api/markets/{id}/evidence` returns **404** until the first poll finishes (~5 s after startup) → show a loading state, retry.
+- `fedwatch` may be `null` (non-Fed events). `fedwatch.from_cache` is always `true` live — show `ts` as "cached HH:MM".
+- `articles` is currently `[]` live → design an empty state ("No news found yet").
+- Article `reaction` ∈ `reacted | counter | unreacted | flat | neutral | pending`.
+- Agent run: `POST /api/agent/run {"source_id": "fedwatch" | "pm_page_fed" | "news_reuters_fed" | "all"}` returns `status: "running"` with a `steps` list; poll `GET /api/agent/runs/{run_id}` every 5 s until `status: "done"`. Expect 1–5 min. Steps are appended as sources finish; a `from_cache: true` result means the live run failed and the cached value was used — label it.
+- Price history has ~280 points (5-min intervals, last 24h): fine to draw directly as an SVG polyline.
+
+**Definition of done for each B task:** the "Done when" column in Section 8, `npm run build` passes, works in both mock and live mode, PR opened and linked to its issue.
+
+---
+
 ## 1. Team and GitHub workflow
 
 | | **Person A — backend** | **Person B — frontend** |
@@ -368,14 +434,14 @@ Stack: Vite + React + TypeScript, plain CSS, `fetch` + `setInterval`. Price line
 
 | ID | Start | Task | Done when |
 | --- | --- | --- | --- |
-| A1 | 0:00 | Repo skeleton: `backend/` FastAPI with `/api/health`, `.env.example`, `contract/*.json` committed | `curl /api/health` ok; B can pull contract |
-| A2 | 0:15 | TinyFish key + run FedWatch by hand — **go/no-go** | JSON back, or decide news-only fallback |
-| A3 | 0:30 | `collector/polymarket.py`: event by slug → token IDs → YES/NO books + price history; Pydantic models | Prints books + history for Fed event |
-| A4 | 1:00 | `engine/quality.py`: p_yes, spread, depth, coherence, freshness (5.1–5.5) + tests | Tests pass |
-| A5 | 1:30 | `agent/tinyfish.py`: `run_source(id)` from `sources.yaml`, schema validation, `agent_cache.json` | `run_source("fedwatch")` returns valid JSON |
-| A6 | 1:50 | `engine/evidence.py`: FedWatch gap, news reaction, dedupe, sentiment, accuracy (5.6–5.9) + tests | Tests pass |
-| A7 | 2:20 | `engine/verdict.py` (5.10) + routes `/api/markets`, `/evidence`, `/agent/run` | Responses match `contract/` keys |
-| A8 | 2:45 | Background loop: Polymarket every 5s, TinyFish every 15 min; cache fallback | Live data flows with TinyFish off |
+| ✅ A1 | 0:00 | Repo skeleton: `backend/` FastAPI with `/api/health`, `.env.example`, `contract/*.json` committed | `curl /api/health` ok; B can pull contract |
+| ✅ A2 | 0:15 | TinyFish key + run FedWatch by hand — **go/no-go** | JSON back, or decide news-only fallback |
+| ✅ A3 | 0:30 | `collector/polymarket.py`: event by slug → token IDs → YES/NO books + price history; Pydantic models | Prints books + history for Fed event |
+| ✅ A4 | 1:00 | `engine/quality.py`: p_yes, spread, depth, coherence, freshness (5.1–5.5) + tests | Tests pass |
+| ✅ A5 | 1:30 | `agent/tinyfish.py`: `run_source(id)` from `sources.yaml`, schema validation, `agent_cache.json` | `run_source("fedwatch")` returns valid JSON |
+| ✅ A6 | 1:50 | `engine/evidence.py`: FedWatch gap, news reaction, dedupe, sentiment, accuracy (5.6–5.9) + tests | Tests pass |
+| ✅ A7 | 2:20 | `engine/verdict.py` (5.10) + routes `/api/markets`, `/evidence`, `/agent/run` | Responses match `contract/` keys |
+| ✅ A8 | 2:45 | Background loop: Polymarket every 5s, TinyFish every 15 min; cache fallback | Live data flows with TinyFish off |
 | A9 | 3:15 | Wire up with B, fix bugs, sanity-check numbers vs polymarket.com | Live UI matches website |
 
 ### Person B — frontend + sources + demo
