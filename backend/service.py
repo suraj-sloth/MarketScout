@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from dataclasses import asdict
 from datetime import datetime, timezone
 
@@ -14,6 +16,7 @@ from engine.verdict import apply_agent_accuracy, verdict
 from store import STATE
 
 EVENT_BY_ID = {e["event_id"]: e for e in EVENTS}
+log = logging.getLogger("marketscout")
 
 
 def _iso(dt: datetime | None) -> str | None:
@@ -78,7 +81,11 @@ def fedwatch_view(event: dict) -> dict | None:
     _, fw = _fedwatch(event["event_id"])
     if not fw:
         return None
-    fw_by_change = ev.fedwatch_by_change(fw["result"]["probabilities"], FED_CURRENT_LOWER_BPS)
+    try:
+        fw_by_change = ev.fedwatch_by_change(ev.normalize_fedwatch(fw["result"]["probabilities"]), FED_CURRENT_LOWER_BPS)
+    except (ValueError, KeyError, TypeError) as e:  # a bad cached reading must not break the API
+        log.warning("ignoring unusable FedWatch reading: %s", e)
+        return None
     pm_by_change = {FED_OUTCOMES[i][1]: m for i, m in st.outcome_mids.items() if i in FED_OUTCOMES}
     tracked = FED_OUTCOMES[event["market_index"]][1]
     gaps = ev.fedwatch_gaps(pm_by_change, fw_by_change)
@@ -156,10 +163,10 @@ def evidence(event_id: str) -> dict | None:
 
     fedwatch = None
     source, fw = _fedwatch(event_id)
-    if fw:
-        by_change = ev.fedwatch_by_change(fw["result"]["probabilities"], FED_CURRENT_LOWER_BPS)
+    view = fedwatch_view(event)  # None if the cached reading is unusable
+    if fw and view:
         fedwatch = {
-            "p": by_change.get(FED_OUTCOMES[event["market_index"]][1]),
+            "p": view["p_fw"],
             "meeting_date": fw["result"]["meeting_date"],
             "url": source["url"],
             "ts": fw["ts"],

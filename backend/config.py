@@ -1,5 +1,7 @@
 """Tracked events, polling intervals and verdict thresholds (planning.md §5.10)."""
 
+import os
+
 # Polymarket events we track. B2 picks the final list; slugs come from
 # polymarket.com/event/<slug>. `market_index` picks one market inside a
 # multi-market event. The Fed event has 5 markets (cut 50+, cut 25, no change,
@@ -52,7 +54,8 @@ SENTIMENT_LOOKBACK_H = 48
 
 # Paper trading (simulated; no real orders). Triggered when a TinyFish source
 # finishes a fresh run.
-PAPER_FEDWATCH_GAP_PTS = 3.0
+# Override for a live demo without editing code, e.g. PAPER_FEDWATCH_GAP_PTS=1 (say so on stage).
+PAPER_FEDWATCH_GAP_PTS = float(os.environ.get("PAPER_FEDWATCH_GAP_PTS", "3.0"))
 PAPER_FEDWATCH_SIZE_USD = 500.0
 PAPER_NEWS_SIZE_USD = 250.0
 PAPER_MIN_ACCURACY = 0.8

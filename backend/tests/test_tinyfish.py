@@ -81,5 +81,34 @@ class SchedulerTest(unittest.TestCase):
         self.assertEqual(due_sources(sources, {}, now), ["a", "b", "c"])
 
 
+
+class JumpTest(unittest.TestCase):
+    def setUp(self):
+        import tempfile
+        from pathlib import Path
+        from agent import tinyfish as t
+        self.t = t
+        self.orig = t.CACHE
+        t.CACHE = Path(tempfile.mkdtemp()) / "cache.json"
+        t._write_cache("fw", {"result": {"probabilities": [{"range_bps": "375-400", "prob": 0.3}, {"range_bps": "400-425", "prob": 0.7}]}})
+        self.src = {"confirm_jump_pts": 15}
+        self.jumped = {"probabilities": [{"range_bps": "375-400", "prob": 0.3}, {"range_bps": "400-425", "prob": 0.34}, {"range_bps": "425-450", "prob": 0.36}]}
+
+    def tearDown(self):
+        self.t.CACHE = self.orig
+
+    def test_small_move_accepted(self):
+        small = {"probabilities": [{"range_bps": "375-400", "prob": 0.25}, {"range_bps": "400-425", "prob": 0.75}]}
+        self.t._check_jump("fw", self.src, small)
+
+    def test_big_move_needs_confirmation(self):
+        with self.assertRaises(self.t.UnconfirmedJump):
+            self.t._check_jump("fw", self.src, self.jumped)
+        self.assertIn("pending", self.t.read_cache()["fw"])
+        self.t._check_jump("fw", self.src, self.jumped)  # second agreeing read -> accepted
+
+    def test_no_limit_means_no_check(self):
+        self.t._check_jump("fw", {}, self.jumped)
+
 if __name__ == "__main__":
     unittest.main()

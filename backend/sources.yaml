@@ -8,6 +8,9 @@
 # strict_schema: true to also send it as TinyFish's `output_schema`. Off by
 #            default: it made the Polymarket page check return empty lists.
 # max_duration_seconds: optional; TinyFish stops the run itself after this.
+# normalize: optional unit fix-up before caching (fedwatch).
+# confirm_jump_pts: optional; a reading that moves more than this from the last
+#            good one is held until a second run agrees.
 # allow_empty: true if an empty list is a real answer (news: no articles).
 #              Otherwise empty lists are rejected and the cached reading is kept.
 #
@@ -17,12 +20,17 @@
   kind: outside_view
   priority: high
   max_duration_seconds: 240
+  normalize: fedwatch        # accept "3.75-4.00"/29.3 and store "375-400"/0.293
+  confirm_jump_pts: 15       # a move > 15 pts needs a second agreeing run
   event: fed-dec
   url: https://www.cmegroup.com/markets/interest-rates/cme-fedwatch-tool.html
   goal: >
-    For the next FOMC meeting, return the meeting date (YYYY-MM-DD) and the
-    probability of each target rate range in basis points, as shown in the
-    probability table.
+    Find the target rate probabilities for the FOMC meeting on December 9,
+    2026 (the next meeting). Return the meeting date (YYYY-MM-DD) and, for
+    each target rate range in that meeting's probability table, the range in
+    basis points (e.g. "375-400") and its probability as a fraction between
+    0 and 1. Use the current probabilities, not the ones from a day, week or
+    month ago.
   schema:
     meeting_date: str
     probabilities: [{range_bps: str, prob: float}]

@@ -42,6 +42,15 @@ class FedWatchTest(unittest.TestCase):
         self.assertEqual(c.status, "ok")
         self.assertIn("29%", c.detail)
 
+    def test_normalize_percent_units(self):
+        rows = ev.normalize_fedwatch([{"range_bps": "3.75-4.00", "prob": 29.3}, {"range_bps": "4.00-4.25", "prob": 70.7}])
+        self.assertEqual(rows, [{"range_bps": "375-400", "prob": 0.293}, {"range_bps": "400-425", "prob": 0.707}])
+        self.assertEqual(ev.normalize_fedwatch(FW_ROWS)[1], {"range_bps": "375-400", "prob": 0.293})
+
+    def test_normalize_rejects_non_table(self):
+        with self.assertRaises(ValueError):
+            ev.normalize_fedwatch([{"range_bps": "375-400", "prob": 0.2}])
+
     def test_big_gap_is_bad(self):
         c = ev.check_fedwatch({0: -10.0, 25: 9.0}, 0, 0.4)
         self.assertEqual(c.status, "bad")

@@ -34,6 +34,30 @@ class SchemaError(ValueError):
     pass
 
 
+class UnconfirmedJump(ValueError):
+    """A reading moved too far from the last good one; held until a second
+    run agrees with it."""
+
+
+def _fedwatch_result(result: dict) -> dict:
+    from engine.evidence import normalize_fedwatch  # pure; avoids a heavy import at module load
+
+    return {**result, "probabilities": normalize_fedwatch(result["probabilities"])}
+
+
+# sources.yaml `normalize:` -> canonicalise units before caching.
+NORMALIZERS = {"fedwatch": _fedwatch_result}
+
+
+def _probs(result: dict) -> dict[str, float]:
+    return {r["range_bps"]: r["prob"] for r in result.get("probabilities", [])}
+
+
+def max_jump_pts(old: dict, new: dict) -> float:
+    a, b = _probs(old), _probs(new)
+    return max((abs(a.get(k, 0.0) - b.get(k, 0.0)) * 100 for k in a.keys() | b.keys()), default=0.0)
+
+
 PRIORITIES = ("high", "normal", "low")
 
 
@@ -164,6 +188,28 @@ def _run_with_retry(body: dict, attempts: int, timeout_s: float) -> dict:
     raise AssertionError("unreachable")
 
 
+def _check_jump(source_id: str, source: dict, result: dict) -> None:
+    """With `confirm_jump_pts` set, a reading that moves more than that from
+    the cached one is only accepted once a second run agrees with it (within
+    the same limit). A misread FedWatch table once showed a 36-pt move that
+    the live markets didn't; one read must not move the verdict or trade."""
+    limit = source.get("confirm_jump_pts")
+    cache = read_cache()
+    cached = cache.get(source_id)
+    if limit is None or cached is None:
+        return
+    jump = max_jump_pts(cached["result"], result)
+    if jump <= limit:
+        cached.pop("pending", None)
+        return
+    pending = cached.get("pending")
+    if pending and max_jump_pts(pending["result"], result) <= limit:
+        return  # confirmed by a second, agreeing read
+    cached["pending"] = {"result": result, "ts": datetime.now(timezone.utc).isoformat()}
+    _write_cache(source_id, cached)
+    raise UnconfirmedJump(f"reading moved {jump:.0f} pts from the last good one; waiting for a confirming run")
+
+
 def run_source(source_id: str, attempts: int = 2, timeout_s: float = 300) -> dict:
     """Run one source. On success the result is cached; on any failure the last
     good cached result is returned with from_cache=True (or the error if none)."""
@@ -173,19 +219,26 @@ def run_source(source_id: str, attempts: int = 2, timeout_s: float = 300) -> dic
         timeout_s = max(timeout_s, source.get("max_duration_seconds", 0) + 60)
         body = _run_with_retry(request_body(source), attempts, timeout_s)
         validate(body["result"], source["schema"], allow_empty=source.get("allow_empty", False))
+        result = body["result"]
+        if source.get("normalize"):
+            try:
+                result = NORMALIZERS[source["normalize"]](result)
+            except (ValueError, KeyError, TypeError) as e:
+                raise SchemaError(f"unusable reading: {e}") from e
+        _check_jump(source_id, source, result)
         entry = {
             "source_id": source_id,
             "run_id": body.get("run_id"),
             "status": "done",
             "num_steps": body.get("num_of_steps"),
-            "result": body["result"],
+            "result": result,
             "schema_valid": True,
             "ts": datetime.now(timezone.utc).isoformat(),
             "from_cache": False,
         }
         _write_cache(source_id, entry)
         return entry
-    except (httpx.HTTPError, RuntimeError, SchemaError, KeyError) as e:
+    except (httpx.HTTPError, RuntimeError, SchemaError, UnconfirmedJump, KeyError) as e:
         cached = read_cache().get(source_id)
         if cached:
             return {**cached, "from_cache": True, "error": str(e)}

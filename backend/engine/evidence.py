@@ -23,9 +23,30 @@ from engine.quality import _grade_low
 
 # --- FedWatch (§5.6) --------------------------------------------------------
 
+def normalize_fedwatch(probabilities: list[dict]) -> list[dict]:
+    """Canonical rows {"range_bps": "375-400", "prob": 0.293}. The agent has
+    returned both "375-400"/0.293 and "3.75-4.00"/29.3 for the same table, so
+    convert percent ranges to bps and percentages to fractions. Raises
+    ValueError if the result still doesn't look like one probability table."""
+    rows = []
+    for row in probabilities:
+        lo, hi = (float(x) for x in str(row["range_bps"]).replace("%", "").split("-"))
+        if hi < 20:  # percent, e.g. 3.75-4.00
+            lo, hi = lo * 100, hi * 100
+        rows.append([round(lo), round(hi), float(row["prob"])])
+    total = sum(r[2] for r in rows)
+    if total > 1.5:  # percentages
+        rows = [[lo, hi, p / 100] for lo, hi, p in rows]
+        total /= 100
+    if not 0.95 <= total <= 1.05:
+        raise ValueError(f"FedWatch probabilities sum to {total:.2f}, not 1")
+    return [{"range_bps": f"{lo}-{hi}", "prob": round(p, 4)} for lo, hi, p in rows]
+
+
 def fedwatch_by_change(probabilities: list[dict], current_lower_bps: int, cap_bps: int = 50) -> dict[int, float]:
-    """Map FedWatch ranges like "400-425" to rate changes vs the current range.
-    Changes beyond +/-cap_bps are folded into the cap bucket ("50+")."""
+    """Map canonical FedWatch ranges like "400-425" (see normalize_fedwatch) to
+    rate changes vs the current range. Changes beyond +/-cap_bps are folded
+    into the cap bucket ("50+")."""
     out: dict[int, float] = {}
     for row in probabilities:
         lower = int(row["range_bps"].split("-")[0])

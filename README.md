@@ -16,7 +16,8 @@ MarketScout checks Polymarket prices for liquidity quality (spread, depth, YES/N
 ```bash
 cd backend
 uv sync
-AGENT_SCHEDULE=0 uv run uvicorn app:app --port 8000
+AGENT_SCHEDULE=0 uv run uvicorn app:app --port 8000   # dev: no TinyFish credits spent
+# demo: drop AGENT_SCHEDULE=0 so TinyFish refreshes every 15 min (see planning.md §9)
 ```
 API runs on `http://localhost:8000`. Run test suite:
 ```bash

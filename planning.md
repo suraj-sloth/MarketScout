@@ -183,6 +183,8 @@ Per-source options (TinyFish's API has no run-priority feature, so priority is o
 - `allow_empty: true`: an empty list is a real answer (news). Otherwise empty results are rejected and the cached reading is kept.
 - `strict_schema: true`: also send the schema as TinyFish's `output_schema`. **Off by default**: on the Polymarket page it made TinyFish return an empty list every time, while the same goal without it returned all 5 outcomes.
 - Only use sites that load normally; skip any that block automated access.
+- `normalize: fedwatch`: the agent returned the same table as "375-400"/0.293 and as "3.75-4.00"/29.3; both are stored as bps + fractions. Unusable readings are rejected; the API never crashes on a bad cache.
+- `confirm_jump_pts: 15`: a reading that moves > 15 pts from the last good one is held as *pending* until a second run agrees. Added after a FedWatch misread showed a 36-pt move (hike 34% vs the live ~70%) that would otherwise have flipped the verdict and fired a paper trade.
 
 | ID | Source | Returns | Checked against |
 | --- | --- | --- | --- |
@@ -489,13 +491,31 @@ Live trading is out of scope: there is no tested strategy edge, Polymarket has n
 
 ---
 
-## 9. Demo (~4 min)
+## 9. Demo (~5 min)
 
-1. **Problem (30s):** "Prediction markets show a number like 64%. Is it a good number? Depends on liquidity, spread and whether it agrees with the world."
-2. **Cards (60s):** Three markets, three verdicts. Open a 🔴 one: "wide spread, $600 depth — that 40% means nothing."
-3. **Agent (60s):** Run FedWatch live. TinyFish browses CME. "Futures traders say 72%, Polymarket 64%." Point at agent accuracy: "we trust this read because it matched the Polymarket API 11/12 times."
-4. **Evidence (60s):** Price line with article dots. "Two outlets said officials favour holding, the price didn't move. News leans NO." Click a link.
-5. **Close (30s):** "MarketScout: a quality check for prediction-market prices. Next: Kalshi, cross-venue matching, more evidence sources."
+### Before going on stage (start 15 min early)
+```sh
+cd backend
+uv run uvicorn app:app --port 8000                              # schedule ON: TinyFish refreshes every 15 min
+# or, to show a paper trade on today's ~1-pt FedWatch gap (say it's a demo threshold):
+PAPER_FEDWATCH_GAP_PTS=1 uv run uvicorn app:app --port 8000
+curl -X POST localhost:8000/api/paper/reset                      # clean ledger
+cd ../frontend && VITE_API_MODE=live npm run dev                 # http://localhost:5173, header shows LIVE API
+```
+Check: header says **LIVE API**, agent accuracy shows a % (not —), FedWatch shows "cached HH:MM" from the last 15 min, news feed has articles. If TinyFish is slow, everything still runs from `agent_cache.json` (labelled cached).
+
+### Script
+1. **Problem (30s):** "A prediction market shows 45%. Is that a good number? Depends on spread, depth, whether the price moves, and whether it agrees with the outside world."
+2. **Three verdicts (60s):** Fed hike 🟢 (1-pt spread, $1M+ depth, FedWatch agrees within ~1 pt). BTC $150k 🟢 — "deep and tight, so a quiet price is *stable*, not stale". Government shutdown 🔴 — "45% on $3k of depth that hasn't moved in a day: that number means little."
+3. **TinyFish live (75s):** Open the agent console, run **FedWatch** (★ high priority). While it browses CME (1–4 min): "FedWatch has no API — TinyFish reads the futures market's probabilities." Point at **agent accuracy 100%**: "we trust its readings because it reads polymarket.com and matches the API on 5/5 outcomes." Result: futures traders and Polymarket agree within ~1 pt.
+4. **Evidence (60s):** Click the Fed card → price line with article dots; CNBC articles with quoted reasons ("additional firming… will be necessary"); sentiment leans hike. BTC: CoinDesk on the Binance hack, all "less likely" — and BTC at 2% already reflects it.
+5. **Paper trading (45s):** "When TinyFish finishes, the rules run automatically." Show the decision log (skips with reasons; with the demo threshold, a simulated $500 fill against the live book that starts at −$7 — the cost of the spread). "Simulated only; the gate refuses unreliable markets, low agent accuracy, or cached readings."
+6. **Close (30s):** "MarketScout: a quality check for prediction-market prices, with an AI agent reading the sources that have no API. Next: Kalshi, cross-venue matching, more sources."
+
+### Likely questions
+- *Does it make money?* — Not claimed. Paper trading shows the mechanics; there's no tested edge yet.
+- *How do you know the agent read the page right?* — Three layers: agent accuracy against the Polymarket API (low accuracy downgrades checks and blocks trades); unit normalisation and sanity checks (probabilities must sum to 1); and big jumps need a second agreeing read. We caught a real misread this way — a 36-pt FedWatch jump the live markets didn't show.
+- *Why not Reuters/AP?* — They block automated access; we only use sites that load normally.
 
 ---
 
