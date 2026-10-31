@@ -49,3 +49,10 @@ REACTION_MIN_PTS = 1.0
 CLUSTER_WINDOW_MIN = 120
 SENTIMENT_HALF_LIFE_H = 24
 SENTIMENT_LOOKBACK_H = 48
+
+# Paper trading (simulated; no real orders). Triggered when a TinyFish source
+# finishes a fresh run.
+PAPER_FEDWATCH_GAP_PTS = 3.0
+PAPER_FEDWATCH_SIZE_USD = 500.0
+PAPER_NEWS_SIZE_USD = 250.0
+PAPER_MIN_ACCURACY = 0.8

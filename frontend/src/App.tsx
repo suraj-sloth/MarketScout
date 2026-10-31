@@ -6,6 +6,7 @@ import { DepthCalculator } from './components/DepthCalculator';
 import { MarketCardsGrid } from './components/MarketCardsGrid';
 import { EconomicEventsPanel } from './components/EconomicEventsPanel';
 import { NewsReactionFeed } from './components/NewsReactionFeed';
+import { PaperTradingPanel } from './components/PaperTradingPanel';
 import { MarketHoursWidget } from './components/MarketHoursWidget';
 import { AgentModal } from './components/AgentModal';
 import { 
@@ -43,6 +44,7 @@ export const App: React.FC = () => {
   const [isMock, setIsMock] = useState<boolean>(getApiMode() === 'mock');
   const [isAgentModalOpen, setIsAgentModalOpen] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [refreshKey, setRefreshKey] = useState<number>(0);
 
   // Data fetching handler
   const loadData = useCallback(async (showIndicator = false) => {
@@ -50,6 +52,7 @@ export const App: React.FC = () => {
     try {
       const { data: mData, isMock: mockMode } = await fetchMarkets();
       setMarketsData(mData);
+      setRefreshKey((k) => k + 1);
       setIsMock(mockMode);
 
       // Keep selected market in sync or select first
@@ -193,6 +196,9 @@ export const App: React.FC = () => {
             selectedEventId={selectedMarket.event_id}
             onSelectMarket={handleSelectMarket}
           />
+
+          {/* Automated paper trading, triggered by TinyFish runs (simulated) */}
+          <PaperTradingPanel refreshKey={refreshKey} />
 
           {/* Bottom Row: News Reaction Feed + Market Hours. Economic events are
               sample data with no live source, so they only appear in mock mode. */}

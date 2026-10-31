@@ -22,7 +22,7 @@ API runs on `http://localhost:8000`. Run test suite:
 ```bash
 python -m unittest discover -s tests
 ```
-*(44 passing unit tests)*
+*(51 passing unit tests)*
 
 ### 2. Frontend (Vite + React + TypeScript)
 ```bash

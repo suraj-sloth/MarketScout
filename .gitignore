@@ -16,3 +16,4 @@ dist/
 agent_cache.json
 *.sqlite
 .DS_Store
+paper_ledger.json

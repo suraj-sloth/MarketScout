@@ -1,0 +1,24 @@
+{
+  "as_of": "2026-10-31T14:00:00Z",
+  "mode": "paper",
+  "rules": {
+    "fedwatch_gap": "|Polymarket - FedWatch| >= 3 pts -> buy FedWatch's side, $500",
+    "unreacted_news": ">= 2 unreacted same-direction articles -> buy that side, $250",
+    "gate": "skip if verdict unreliable, agent accuracy < 80%, or reading from cache"
+  },
+  "totals": {"cost_usd": 500.0, "value_usd": 492.86, "pnl_usd": -7.14, "open_positions": 1},
+  "positions": [
+    {
+      "id": "a1b2c3d4", "opened_at": "2026-10-31T13:45:10Z", "source_id": "fedwatch", "rule": "fedwatch_gap",
+      "event_id": "fed-dec", "question": "Will the Fed increase interest rates by 25 bps after the December 2026 meeting?",
+      "side": "YES", "shares": 714.2857, "cost_usd": 500.0, "avg_price": 0.7, "slippage_pts": 0.0,
+      "complete_fill": true, "reason": "FedWatch above Polymarket by 3.4 pts",
+      "mark_value_usd": 492.86, "pnl_usd": -7.14
+    }
+  ],
+  "decisions": [
+    {"ts": "2026-10-31T13:45:10Z", "source_id": "fedwatch", "rule": "fedwatch_gap", "event_id": "fed-dec", "action": "buy", "side": "YES", "size_usd": 500.0, "reason": "FedWatch above Polymarket by 3.4 pts; filled 714 YES @ 0.700 (paper)"},
+    {"ts": "2026-10-31T13:30:02Z", "source_id": "news_coindesk_btc", "rule": "unreacted_news", "event_id": "btc-150k-dec", "action": "skip", "side": null, "size_usd": 0, "reason": "no unreacted news cluster"},
+    {"ts": "2026-10-31T13:30:01Z", "source_id": "news_cnbc_shutdown", "rule": "unreacted_news", "event_id": "gov-shutdown-dec", "action": "skip", "side": null, "size_usd": 0, "reason": "no unreacted news cluster"}
+  ]
+}

@@ -30,6 +30,20 @@ class EventState:
 STATE: dict[str, EventState] = {e["event_id"]: EventState() for e in EVENTS}
 AGENT_RUNS: dict[str, dict] = {}
 
+# Called with (source_id, result) after every TinyFish run. app.py sets it to
+# trader.on_source_result (kept as a hook to avoid a store <-> trader import cycle).
+ON_RESULT = None
+
+
+def _run_and_notify(source_id: str) -> dict:
+    result = tinyfish.run_source(source_id)
+    if ON_RESULT is not None:
+        try:
+            ON_RESULT(source_id, result)
+        except Exception:  # a trading bug must never stop data collection
+            log.exception("result hook failed for %s", source_id)
+    return result
+
 
 # --- Polymarket polling -----------------------------------------------------
 
@@ -64,7 +78,7 @@ def start_agent_run(source_id: str) -> dict:
                           "steps": [f"Started TinyFish on {s}" for s in sources]}
 
     def work() -> None:
-        results = [tinyfish.run_source(s) for s in sources]
+        results = [_run_and_notify(s) for s in sources]
         run = AGENT_RUNS[run_id]
         for r in results:
             if r["status"] == "failed":
@@ -121,7 +135,7 @@ def schedule_agent_forever() -> None:
                     continue
                 log.info("agent: running %s priority %s", level, batch)
                 with ThreadPoolExecutor(AGENT_MAX_PARALLEL) as ex:
-                    list(ex.map(tinyfish.run_source, batch))
+                    list(ex.map(_run_and_notify, batch))
                 for sid in batch:
                     last_attempt[sid] = time.time()
             time.sleep(60)

@@ -70,6 +70,34 @@ def agent_accuracy() -> dict:
     return ev.agent_accuracy(pairs)
 
 
+def fedwatch_view(event: dict) -> dict | None:
+    """Per-outcome gaps vs the cached FedWatch reading, for a Fed event."""
+    st = STATE[event["event_id"]]
+    if not (event.get("fed") and st.outcome_mids):
+        return None
+    _, fw = _fedwatch(event["event_id"])
+    if not fw:
+        return None
+    fw_by_change = ev.fedwatch_by_change(fw["result"]["probabilities"], FED_CURRENT_LOWER_BPS)
+    pm_by_change = {FED_OUTCOMES[i][1]: m for i, m in st.outcome_mids.items() if i in FED_OUTCOMES}
+    tracked = FED_OUTCOMES[event["market_index"]][1]
+    gaps = ev.fedwatch_gaps(pm_by_change, fw_by_change)
+    return {"gaps": gaps, "tracked": tracked, "gap": gaps[tracked], "p_fw": fw_by_change.get(tracked, 0.0)}
+
+
+def unreacted_directions(event_id: str) -> list[int]:
+    st = STATE[event_id]
+    if st.snap is None:
+        return []
+    articles, _ = ev.analyse_news(_articles(event_id), st.snap.history, datetime.now(timezone.utc))
+    return [a.direction for a in articles if a.reaction == "unreacted"]
+
+
+def market_view(event_id: str) -> dict | None:
+    """One market as returned by /api/markets."""
+    return _market(EVENT_BY_ID[event_id], datetime.now(timezone.utc), agent_accuracy())
+
+
 def _market(event: dict, now: datetime, accuracy: dict) -> dict | None:
     st = STATE[event["event_id"]]
     if st.snap is None:
@@ -83,14 +111,9 @@ def _market(event: dict, now: datetime, accuracy: dict) -> dict | None:
         q.check_coherence(s.yes_book, s.no_book),
         q.check_freshness(s.history, now, s.yes_book, s.no_book),
     ]
-    if event.get("fed") and st.outcome_mids:
-        _, fw = _fedwatch(event["event_id"])
-        if fw:
-            fw_by_change = ev.fedwatch_by_change(fw["result"]["probabilities"], FED_CURRENT_LOWER_BPS)
-            pm_by_change = {FED_OUTCOMES[i][1]: m for i, m in st.outcome_mids.items() if i in FED_OUTCOMES}
-            tracked = FED_OUTCOMES[event["market_index"]][1]
-            checks.append(ev.check_fedwatch(ev.fedwatch_gaps(pm_by_change, fw_by_change), tracked,
-                                            fw_by_change.get(tracked, 0.0)))
+    fw = fedwatch_view(event)
+    if fw:
+        checks.append(ev.check_fedwatch(fw["gaps"], fw["tracked"], fw["p_fw"]))
     articles, news_check = ev.analyse_news(_articles(event["event_id"]), s.history, now)
     checks.append(news_check)
     checks = apply_agent_accuracy(checks, accuracy["value"])

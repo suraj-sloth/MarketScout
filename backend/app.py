@@ -11,6 +11,7 @@ from pydantic import BaseModel
 
 import service
 import store
+import trader
 from agent import tinyfish
 
 logging.basicConfig(level=logging.INFO)
@@ -18,6 +19,7 @@ logging.basicConfig(level=logging.INFO)
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    store.ON_RESULT = trader.on_source_result
     poller = asyncio.create_task(store.poll_forever())
     store.schedule_agent_forever()
     yield
@@ -66,6 +68,18 @@ def sources() -> dict:
         }
         for s in tinyfish.load_sources().values()
     ]}
+
+
+@app.get("/api/paper")
+def paper() -> dict:
+    """Simulated positions (marked to the live bid) and the decision log."""
+    return trader.view()
+
+
+@app.post("/api/paper/reset")
+def paper_reset() -> dict:
+    trader.reset()
+    return trader.view()
 
 
 class AgentRunRequest(BaseModel):

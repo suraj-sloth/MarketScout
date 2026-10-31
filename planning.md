@@ -32,7 +32,7 @@ The verdict comes from:
 
 | Area | Status |
 | --- | --- |
-| Backend A1–A8 | ✅ Done, on `main`, 44 tests passing, serving **live** data |
+| Backend A1–A8 | ✅ Done, on `main`, 51 tests passing (incl. paper trading), serving **live** data |
 | Frontend B1–B8 | ✅ Done, fully functional dark fintech dashboard (LittleBee-inspired) |
 | Wire-up (A9) | ✅ Frontend works against live backend via Vite proxy. PR `fe/live-data-fixes` removes mock/fabricated values from live mode |
 | Events tracked | **Live: 3** — Fed "hike 25 bps" Dec 9 (🟢, index 3; clearer than "no change" for news direction), BTC $150k by Dec 31 2026 (🟢, `when-will-bitcoin-hit-150k` [4]), Gov shutdown by Dec 31 (🔴 thin + flat, `government-shutdown-by` [1]) |
@@ -467,6 +467,25 @@ Stack: Vite + React + TypeScript, plain CSS, `fetch` + `setInterval`. Price line
 
 ### If behind
 Cut in order: news reaction (keep articles + sentiment) → 3rd market → live agent step log (show cached). **Never cut:** price-quality checks, verdict, FedWatch or news via TinyFish, agent accuracy.
+
+---
+
+## 8b. Automated paper trading (added after the MVP)
+
+**Simulated only — no wallet, no real orders.** Every TinyFish run (scheduled or manual) calls `trader.on_source_result`, which evaluates the rules for that source's market and simulates any trade against the **live order book**.
+
+| Rule | Trigger | Simulated trade |
+| --- | --- | --- |
+| `fedwatch_gap` | After a FedWatch run: \|Polymarket − FedWatch\| ≥ 3 pts on the tracked outcome | Buy the side FedWatch favours, $500 |
+| `unreacted_news` | After a news run: ≥ 2 unreacted same-direction articles (§5.7) | Buy that side, $250 |
+
+**Confidence gate** (no trade if any): verdict 🔴 unreliable · agent accuracy < 80% · the TinyFish reading came from cache. One open position per market per rule.
+
+**Fills:** walk the asks level by level → shares, average price, slippage vs best ask, partial fill if the book runs out. **Marking:** walk the bids for the current sell value → P&L (starts negative by the spread).
+
+Every evaluation is logged with its reason (e.g. "skip: gap −1.2 pts within ±3"). Thresholds and sizes: `config.py` `PAPER_*`. Ledger: `backend/paper_ledger.json` (gitignored). API: `GET /api/paper`, `POST /api/paper/reset`. UI: `PaperTradingPanel` (labelled SIMULATED).
+
+Live trading is out of scope: there is no tested strategy edge, Polymarket has no testnet, and access is restricted in some countries.
 
 ---
 

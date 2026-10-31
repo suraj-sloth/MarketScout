@@ -1,5 +1,6 @@
-import { MarketsResponse, EvidenceResponse, AgentRunResponse, AgentSource } from './types';
+import { MarketsResponse, EvidenceResponse, AgentRunResponse, AgentSource, PaperResponse } from './types';
 import sourcesContract from '../../contract/sources.json';
+import paperContract from '../../contract/paper.json';
 import { MOCK_MARKETS_RESPONSE, MOCK_EVIDENCE_MAP, MOCK_AGENT_RUNS } from './mockData';
 
 // Allow runtime override or environment variable
@@ -60,6 +61,22 @@ export async function fetchSources(): Promise<AgentSource[]> {
     return [];
   }
   return sourcesContract.sources as AgentSource[];
+}
+
+/** Simulated (paper) positions and the trading decision log. */
+export async function fetchPaper(): Promise<PaperResponse | null> {
+  if (currentMode === 'live') {
+    try {
+      const res = await fetch('/api/paper', { signal: AbortSignal.timeout(6000) });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (err) {
+      console.warn('Error fetching paper trading state', err);
+    }
+    return null;
+  }
+  return paperContract as PaperResponse;
 }
 
 export async function fetchEvidence(eventId: string): Promise<{ data: EvidenceResponse; isMock: boolean }> {

@@ -121,3 +121,41 @@ export interface AgentSource {
   url: string;
   last_run: string | null;
 }
+
+export interface PaperPosition {
+  id: string;
+  opened_at: string;
+  source_id: string;
+  rule: string;
+  event_id: string;
+  question: string;
+  side: 'YES' | 'NO';
+  shares: number;
+  cost_usd: number;
+  avg_price: number;
+  slippage_pts: number;
+  complete_fill: boolean;
+  reason: string;
+  mark_value_usd: number | null;
+  pnl_usd: number | null;
+}
+
+export interface PaperDecision {
+  ts: string;
+  source_id: string;
+  rule: string;
+  event_id: string;
+  action: 'buy' | 'skip';
+  side: 'YES' | 'NO' | null;
+  size_usd: number;
+  reason: string;
+}
+
+export interface PaperResponse {
+  as_of: string;
+  mode: 'paper';
+  rules: Record<string, string>;
+  totals: { cost_usd: number; value_usd: number; pnl_usd: number; open_positions: number };
+  positions: PaperPosition[];
+  decisions: PaperDecision[];
+}
